@@ -1,0 +1,21 @@
+list Method
+-parsing XBEE receive data # (output array? or object.getData)
+	-join 16 bit data #  //join & split better placed in same class
+	-split 16 bit data #
+-creating XBEE packet
+	-parameter :
+		-adress
+		-id,data (better placed in 2D array)
+-sendig XBEE packet
+	-send
+
+-write parsed data to SQL #
+-SQL parameter searching #
+	-check adress already in SQL or not #
+	-check is there R mark #
+-read SQL data (device list, schedule table)
+-LOGIC if there's R mark
+
+//Optional
+-LOGIC for activating with delay( manual or schedule)
+-LOGIC for checking time with schedule
