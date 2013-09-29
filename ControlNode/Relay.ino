@@ -41,6 +41,16 @@
 #define DT8Enum 0x30
 #define DT16Uint 0x21
 
+//initial value for packet
+#define OccValue 0 //PIR Sensor
+#define LightValueMSB 0 //MSB of light level value
+#define LightValueLSB 0 //LSB of light level value
+#define LightSetMSB 0 //MSB of light level set point value
+#define LightSetLSB 0 //LSB of light level set point value
+#define Lamp 0 //operatioan mode status -> AUTO
+#define mode 0x01 //operatioan mode status -> AUTO
+#define endpoint 1 //endpoint = zone
+
 //Occupancy Value
 #define OCCUPIED 0x01
 #define UNOCCUPIED 0x00
@@ -64,26 +74,32 @@
 #define OFF 0x00
 
 int Trans = 0;
+//dump for sensor value array
+int dump=-1;
+double ddump=-1;
+
+//int mock=1; //data for testing zone occupancy
+//double dmock=100; //data for testing zone lighting level
 
 ///sensor value table
-int pirval[5] = { 0, -1, -1, -1};
-double lightval[5] = { 0, -1, -1, -1};
+int pirval[5] = { 0, -1, -1, -1,-1};
+double lightval[5] = { 0, -1, -1, -1,-1};
 
 ///zone mapping table , always insert -1 if element not used. in some table rightmost column or lowest row, used -1 as table limit
-int zonepir [5][4] = { //pir mapping to zones
-	{  pirval[0],  -1, -1, -1},
-	{  -1,  -1, -1, -1},
-	{ -1, -1, -1, -1},
-	{ -1, -1, -1, -1},
-	{ -1, -1, -1, -1} //row 5  is table limit, always set -1
+int *zonepir [5][4] = { //pir mapping to zones
+	{  &pirval[0],  &dump, &dump, &dump},
+	{ &dump, &dump, &dump, &dump},
+	{ &dump, &dump, &dump, &dump},
+	{ &dump, &dump, &dump, &dump},
+	{ &dump, &dump, &dump, &dump} //row 5  is table limit, always set -1
 };
 
-double zonelux [5][4] = { //ligh sensor mapping to zones
-	{  lightval[0],  -1, -1, -1},
-	{ -1, -1, -1, -1},
-	{ -1, -1, -1, -1},
-	{ -1, -1, -1, -1},
-	{ -1, -1, -1, -1} //row 5  is table limit, always set -1
+double *zonelux [5][4] = { //ligh sensor mapping to zones
+	{  &lightval[0],  &ddump, &ddump, &ddump},
+	{ &ddump, &ddump, &ddump, &ddump},
+	{ &ddump, &ddump, &ddump, &ddump},
+	{ &ddump, &ddump, &ddump, &ddump},
+	{ &ddump, &ddump, &ddump, &ddump} //row 5  is table limit, always set -1
 };
 
 int zoneocclamp [3][4] ={  //lamp and occupancy status of each zones
@@ -92,36 +108,19 @@ int zoneocclamp [3][4] ={  //lamp and occupancy status of each zones
 	{AUTO, -1, -1, -1} //mode
 };
 
-double zonelight [2][4] ={ //light level and setpoint status of each zones
+double zonelight [3][4] ={ //light level and setpoint status of each zones
 	{0, -1, -1, -1}, //lux
-	{100, -1, -1, -1} //setpoint
+	{50, -1, -1, -1}, //setpoint
+	{5, -1, -1, -1} //error band
 };
 
 ///pin mapping, always insert -1 if element not used
-int zonerelay[5]= {8,-1,-1,-1,-1}; //pin mapping for relay
+int zonerelay[5]= {4,-1,-1,-1,-1}; //pin mapping for relay
 int pinpir[5] = {3,-1,-1,-1,-1}; //pin mapping for pir
 int pinlight[5] = {A6,-1,-1,-1,-1}; //pin mapping for light level sensor
 
-
-//Sensor Value container for packet
-byte OccValue =0; //PIR Sensor
-double LightValue=0; //Light Sensor
-unsigned int LightValueMSB = 0;
-unsigned int LightValueLSB = 0;
-//setpoint & error band Value container for packet
-double LightSet=0;
-unsigned int LightSetMSB = 0;
-unsigned int LightSetLSB = 0;
-double LightBand=10;
-//lamp container for packet
-byte Lamp;
-byte mode;
-
 //operational VARIABLE
 byte aktif=0;
-
-//endpoint variable
-byte endpoint=0;
 
 //Xbee Object
 XBee xbee = XBee();
@@ -171,19 +170,19 @@ void setup() {
   //Reserved for Startup Action
   flashLed(8, 3, 500);
   
-//Interrupt for Sending Device Stat every 1s
-  MsTimer2::set(1000, activate); 
+  MsTimer2::set(1000, activate); //Interrupt for Sending Device Stat every 1s
   MsTimer2::start();
   
   digitalWrite(5,HIGH);
 }
 
 void loop() {
-	checkPacket(); 		//check incoming packet
+	//checkPacket(); 		//check incoming packet
 	readSensor(); 		//reading sensor value and assigning to zones
 	updateStatus(); 	//update zone status
 	autoSwitch();	//actuating lamp based on status and mode
-	if (aktif==1) sendStatus(); 	//Sending data to Gateway
+	//if (aktif==1) sendStatus(); 	//Sending data to Gateway
+	delay(2000);Serial.println();
 }
 
 //functions for sending and receiving packet
@@ -237,10 +236,10 @@ void sendStatus(){
         //Serial.println("ind SendStatus loop ");
 	byte j=0;
 	while(zonerelay[j]!=(-1)){
-		endpoint=j+1; //assign endpoint value to packet
-                mode=zoneocclamp[2][j]; //assign occupancy value to packet
-		OccValue=zoneocclamp[1][j]; //assign occupancy value to packet
-		Lamp=zoneocclamp[0][j]; //assign occupancy value to packet
+		StatPayload[0]=j+1; //assign endpoint value to packet
+        StatPayload[27]=zoneocclamp[2][j]; //assign current mode status to packet
+		StatPayload[13]=zoneocclamp[1][j]; //assign occupancy value to packet
+		StatPayload[9]=zoneocclamp[0][j]; //assign lamp status to packet
 		convertLight(zonelight[1][j], LUXSET); //assign light level set point value to packet
 		convertLight(zonelight[0][j], LUXLEVEL); //assign light level value to packet
 		xbee.send(StatPacket);
@@ -264,7 +263,8 @@ void readSensor(){
 	while(pinlight[i]!=-1){
 		lightval[i]=analogRead(pinlight[i]);
 		lightval[i]=lightval[i]/1024*5; //voltage value
-		lightval[i]=4*lightval[i]*100-9.77-0.97; //illuminance value
+		lightval[i]=4*lightval[i]*100-9.77-0.97;
+		if(lightval[i]<0) lightval[i]=0; //illuminance value
                 //Serial.print("Nilai sensor cahaya : ");
                 //Serial.println(lightval[i]);
 		i++;
@@ -278,20 +278,25 @@ void updateStatus(){
 		int j=0; //occupancy status row counter
 		int k=0; //light level row counter
 		byte occ=0;
-		double lux=0;
-		while(zonepir[j][i]!=-1){
-                        Serial.print("Nilai sensor Pir : ");
-                        Serial.println(zonepir[j][i]);
-			occ=occ || zonepir[j][i];
+		double lux=*zonelux[0][i];
+		while(*zonepir[j][i]!=-1){
+                        //Serial.print("Nilai sensor Pir : ");
+                        //Serial.println(*zonepir[j][i]);
+			occ=occ || *zonepir[j][i];
 			j++;
 		}
-		while(zonelux[k][i]!=-1){
+		                //Serial.print("Nilai sensor Pir : ");
+                        //Serial.println(occ);
+
+		while(*zonelux[k][i]!=-1){
                         //Serial.print("Nilai sensor cahaya : ");
-                        //Serial.println(zonelux[k][i]);
-			lux=lux+zonelux[k][i]/2;
+                        //Serial.println(*zonelux[k][i]);
+			lux=(lux+*zonelux[k][i])/2;
 			k++;
 		}
-		
+		                //Serial.print("Nilai sensor cahaya : ");
+                        //Serial.println(lux);
+
 		zoneocclamp[1][i]=occ;
 		zonelight[0][i]=lux;
 		i++;
@@ -301,27 +306,35 @@ void updateStatus(){
 //functions for lamp switching
 void autoSwitch(){
 	byte j=0;
-	while(zonerelay[j]!=-1){	
+	while(zonerelay[j]!=-1){
+		//Serial.println("barrier AUTO 1");	
 		if(zoneocclamp[2][j]==AUTO){ //if in auto mode,checked occupancy and lighting level first
+			//Serial.println("barrier AUTO 2");	
 			if(zoneocclamp[1][j]==OCCUPIED){
-				if(zonelight[0][j]<(zonelight[1][j]-LightBand)){
-					zoneocclamp[0][j]==ON;
+				//Serial.println("barrier ON 1");	
+				if(zonelight[0][j]<(zonelight[1][j]-zonelight[2][j])){
+					//Serial.println("barrier ON 2");
+					zoneocclamp[0][j]=ON;
 				}
-				else if(zonelight[0][j]>(zonelight[1][j]+LightBand)){
-					zoneocclamp[0][j]==OFF;
+				else if(zonelight[0][j]>(zonelight[1][j]+zonelight[2][j])){
+					//Serial.println("barrier OFF 1");
+					zoneocclamp[0][j]=OFF;
 				}
 			}
 			else if(zoneocclamp[1][j]==UNOCCUPIED){
-				zoneocclamp[0][j]==OFF;
+				//Serial.println("barrier OFF 2");
+				zoneocclamp[0][j]=OFF;
 			}
 		}
 		//if device in manual , lamp activating based on assigned lamp value from HMI
+		//Serial.print("Nilai Lampu : ");
+		//Serial.println(zoneocclamp[0][j]);
 		digitalWrite(zonerelay[j], zoneocclamp[0][j]);
 		j++;
 	}
 }
 
-void manualSwitch(){
+/*void manualSwitch(){
 	byte i=0;
 	if(mode==AUTO){ 
 		mode=MANUAL;
@@ -333,7 +346,7 @@ void manualSwitch(){
 	else {
 		mode=AUTO;
 	}
-}
+}*/
 
 //function for set light level treshold
 void setPoint(){
@@ -360,13 +373,13 @@ void convertLight(double lux, byte type){
 	lux=(int) lux;
 	switch(type){
 		case LUXSET:
-			LightSetMSB=getMSB(lux,16);
-			LightSetLSB=getLSB(lux,16);
+			StatPayload[22]=getMSB(lux,16); //fill in lightsetMSB value to packet
+			StatPayload[23]=getLSB(lux,16); //fill in lightsetLSB value to packet
 		break;
 		
 		case LUXLEVEL:
-			LightValueMSB=getMSB(lux,16);
-			LightValueLSB=getLSB(lux,16);			
+			StatPayload[17]=getMSB(lux,16); //fill in lightvalueMSB value to packet
+			StatPayload[18]=getLSB(lux,16); //fill in lightvalueMSB value to packet			
 		break;
 	}
 }
