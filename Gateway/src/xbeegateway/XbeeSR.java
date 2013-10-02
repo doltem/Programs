@@ -14,11 +14,13 @@ import com.rapplogic.xbee.api.ApiId;
 import com.rapplogic.xbee.api.XBee;
 import com.rapplogic.xbee.api.XBeeAddress64;
 import com.rapplogic.xbee.api.XBeeResponse;
+import com.rapplogic.xbee.api.ErrorResponse;
 import com.rapplogic.xbee.api.XBeeTimeoutException;
 import com.rapplogic.xbee.api.zigbee.ZNetRxResponse;
 import com.rapplogic.xbee.api.zigbee.ZNetTxRequest;
 import com.rapplogic.xbee.api.zigbee.ZNetTxStatusResponse;
 import com.rapplogic.xbee.util.ByteUtils;
+import com.rapplogic.xbee.api.XBeeException;
 import java.math.*;
 /**
  *
@@ -38,39 +40,59 @@ public class XbeeSR {
     private static final short LLamp = 0x01;
     private static final short LSetPoint = 0x03;
     
+    //Xbee Class declaration
+    Bitplay bitplay=new Bitplay();
+    XBee xbee = new XBee();
+    XBeeResponse response = null;
+    ZNetRxResponse rx=null;
+    
+    //data structure for sending to remote xbee
+    QContainer[] qdata=null;
+    
     //variable for creating database
     String url; String user; String pass;
     //variable
+    
     String gatePort;
     int baudRate;
     boolean avail=false;
-    int[] data=new int[20];
+    int[] data=new int[30];
     String remoteAddr;
     int[] intAddr;
-    public XbeeSR(String sPort, int baud){
+    
+    public XbeeSR(String sPort, int baud) throws XBeeException{
         gatePort=sPort;
         baudRate=baud;
+        try {
+            xbee.open(gatePort, baudRate);   
+        }
+        catch (XBeeException e){
+            //System.out.println(e);
+        }
+        finally{
+            if(xbee.isConnected()){
+                //xbee.close();
+            }
+        }
     }
     
-    public void parseResponse() throws Exception{ //method for parsing incoming Xbee data
-        XBee xbee = new XBee();
-        try {
-            xbee.open(gatePort, baudRate);
-            XBeeResponse response = xbee.getResponse();
+    public void parseResponse() throws XBeeException, ClassCastException{ //method for parsing incoming Xbee data
+        try{
+            response = xbee.getResponse();
             if (response.getApiId() == ApiId.ZNET_RX_RESPONSE){
-                ZNetRxResponse rx = (ZNetRxResponse) response;
+                rx = (ZNetRxResponse) response;
                 remoteAddr=ByteUtils.toBase16(rx.getRemoteAddress64().getAddress());
                 intAddr=rx.getRemoteAddress64().getAddress();
                 data=rx.getData();
                 avail=true;
-            }   
+            }
         }
-        catch (Exception e){
-            
+        catch (XBeeException | ClassCastException e){
+            System.out.println(e);
         }
         finally{
             if(xbee.isConnected()){
-                xbee.close();
+                //xbee.close();
             }
         }
     }
@@ -80,15 +102,13 @@ public class XbeeSR {
     }
     
     public int getData16(int pos1, int pos2){ //method for getting16bit data from parsed packet
-        Bitplay bitplay=new Bitplay();
         int value=bitplay.joinBit(getData(pos1),getData(pos2),16);
         return value;
     }
     
-    public int getLight(int pos1, int pos2){ //method for getting16bit data from parsed packet
-        Bitplay bitplay=new Bitplay();
-        int value=bitplay.joinBit(getData(pos1),getData(pos2),16);
-        value=10^((value-1)/10000);
+    public double getLight(int pos1, int pos2){ //method for getting16bit data from parsed packet
+        double value=getData16(pos1,pos2);
+        value= Math.pow(10,((value-1)/10000));
         return value;
     }
     
@@ -121,8 +141,6 @@ public class XbeeSR {
     }
     
     public void sendDataLight()throws Exception{
-        XBee xbee = new XBee();
-	QContainer[] qdata=null;
         SQLmod dbase=new SQLmod(url,user,pass);
         //get data of adress with write status from database
         qdata=dbase.identifyWrite();
@@ -160,7 +178,7 @@ public class XbeeSR {
         }
         finally{
             if(xbee.isConnected()){
-                xbee.close();
+                //xbee.close();
             }
         }
     }

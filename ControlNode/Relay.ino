@@ -60,7 +60,7 @@
 #define LUXLEVEL 0x01
 
 //LED mapping
-#define setLed 6
+#define setLed 7
 #define statusLed 7
 #define modeLed 7
 #define setButton 3
@@ -132,7 +132,7 @@ ZBTxStatusResponse txStatus = ZBTxStatusResponse();
 
 ///create payload for status delivery
 //Gateway Adress
-XBeeAddress64 GatewayAddr = XBeeAddress64(0x0013A200, 0x408B5E9F);
+XBeeAddress64 GatewayAddr = XBeeAddress64(0x0013A200, 0x4092D859);
 //packet payload
 uint8_t StatPayload[] = {endpoint, EndGateway, MCustomCluster, LCustomCluster, FCServer2Client, Trans, CReportAttribute, 0x00,LOnOffId, DT8Bitmap, Lamp, 0x00, LOccId, DT8Bitmap, OccValue, 0x00, LLightId, DT16Uint, LightValueMSB, LightValueLSB, 0x00, LLightSetId, DT16Uint, LightSetMSB, LightSetLSB, 0x00,LMode, DT8Bitmap, mode};
 //Transmit Packets
@@ -170,19 +170,19 @@ void setup() {
   //Reserved for Startup Action
   flashLed(8, 3, 500);
   
-  MsTimer2::set(1000, activate); //Interrupt for Sending Device Stat every 1s
+  MsTimer2::set(2000, activate); //Interrupt for Sending Device Stat every 1s
   MsTimer2::start();
   
   digitalWrite(5,HIGH);
 }
 
 void loop() {
-	//checkPacket(); 		//check incoming packet
+	checkPacket(); 		//check incoming packet
 	readSensor(); 		//reading sensor value and assigning to zones
 	updateStatus(); 	//update zone status
 	autoSwitch();	//actuating lamp based on status and mode
-	//if (aktif==1) sendStatus(); 	//Sending data to Gateway
-	delay(2000);Serial.println();
+	if (aktif==1) sendStatus(); 	//Sending data to Gateway
+	//delay(1000);Serial.println();
 }
 
 //functions for sending and receiving packet
@@ -219,7 +219,7 @@ void checkPacket(){
 			// get the delivery status, the fifth byte
 			if (txStatus.getDeliveryStatus() == SUCCESS) {
 				// success.  time to celebrate
-				flashLed(statusLed, 2, 100);
+				flashLed(8, 3, 100);
 			} else {
 				// the remote XBee did not receive our packet. is it powered on?
 				//flashLed(statusLed, 3,500);
@@ -237,9 +237,9 @@ void sendStatus(){
 	byte j=0;
 	while(zonerelay[j]!=(-1)){
 		StatPayload[0]=j+1; //assign endpoint value to packet
-        StatPayload[27]=zoneocclamp[2][j]; //assign current mode status to packet
-		StatPayload[13]=zoneocclamp[1][j]; //assign occupancy value to packet
-		StatPayload[9]=zoneocclamp[0][j]; //assign lamp status to packet
+        StatPayload[28]=zoneocclamp[2][j]; //assign current mode status to packet
+		StatPayload[14]=zoneocclamp[1][j]; //assign occupancy value to packet
+		StatPayload[10]=zoneocclamp[0][j]; //assign lamp status to packet
 		convertLight(zonelight[1][j], LUXSET); //assign light level set point value to packet
 		convertLight(zonelight[0][j], LUXLEVEL); //assign light level value to packet
 		xbee.send(StatPacket);
@@ -360,8 +360,6 @@ void setPoint(){
 
 double getLight(int mlux, int llux){
 	double light;
-	mlux = (double) mlux;
-	llux = (double) llux;
 	light=joinBit(mlux, llux,16);
 	light=pow(10,((light-1)/10000));
 	return light;
@@ -373,13 +371,13 @@ void convertLight(double lux, byte type){
 	lux=(int) lux;
 	switch(type){
 		case LUXSET:
-			StatPayload[22]=getMSB(lux,16); //fill in lightsetMSB value to packet
-			StatPayload[23]=getLSB(lux,16); //fill in lightsetLSB value to packet
+			StatPayload[23]=getMSB(lux,16); //fill in lightsetMSB value to packet
+			StatPayload[24]=getLSB(lux,16); //fill in lightsetLSB value to packet
 		break;
 		
 		case LUXLEVEL:
-			StatPayload[17]=getMSB(lux,16); //fill in lightvalueMSB value to packet
-			StatPayload[18]=getLSB(lux,16); //fill in lightvalueMSB value to packet			
+			StatPayload[18]=getMSB(lux,16); //fill in lightvalueMSB value to packet
+			StatPayload[19]=getLSB(lux,16); //fill in lightvalueMSB value to packet			
 		break;
 	}
 }
@@ -431,6 +429,7 @@ int pangkat(int val, int expo){
 //Timer ISR for activating xbee
 void activate(){
 	aktif=1;
+	//Serial.println("Timer Activated");
 }
 
 //flashing led
