@@ -184,7 +184,7 @@ void loop() {
 	updateStatus(); 	//update zone status
 	autoSwitch();	//actuating lamp based on status and mode
 	if (aktif==1) sendStatus(); 	//Sending data to Gateway
-	//delay(1000);Serial.println();
+	//delay(500);Serial.println();
 }
 
 //functions for sending and receiving packet
@@ -242,6 +242,7 @@ void sendStatus(){
 //functions for read sensor and update status
 void readSensor(){
 	byte i=0; //counter
+	double lighttemp=0; //temporary value for storing lighting level value
 	while(pinpir[i]!=-1){
 		int pirvesel=digitalRead(pinpir[i]);
 		if (pirvesel==HIGH) pirval[i]=0;
@@ -252,12 +253,14 @@ void readSensor(){
 	}
 	i=0;
 	while(pinlight[i]!=-1){
-		lightves[i]=lightves[i]+analogRead(pinlight[i]);
-		lightves[i]=lightves[i]/1024*5; //voltage value
-		lightves[i]=4*lightves[i]*100-9.77-0.97;
-		if(lightves[i]<0) lightves[i]=0; //illuminance value
+		lighttemp=analogRead(pinlight[i]);
+		lighttemp=lighttemp+analogRead(pinlight[i]);
+		lighttemp=lighttemp/1024*5; //voltage value
+		lighttemp=4*lighttemp*100-9.77-0.97;
+		if(lighttemp<0) lighttemp=0; //illuminance value
+		lightves[i]=lightves[i]+lighttemp;
                 //Serial.print("Nilai sensor cahaya : ");
-                //Serial.println(lightval[i]);
+                //Serial.println(lighttemp);
 		i++;
 	}
 	lightcount++;
@@ -425,6 +428,7 @@ void activate(){
 	aktif=1;
 	while(pinlight[i]!=-1){
 		lightval[i]=lightves[i]/lightcount; //get mean value of lighting level reading
+		lightves[i]=0;
 		i++;
 	}
 	lightcount = 0;
