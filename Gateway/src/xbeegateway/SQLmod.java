@@ -12,17 +12,12 @@ package xbeegateway;
  */
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SQLmod {
     String DB_URL;
     String USER;
     String PASS;
-    String tableStat="device_stat_";
-    String adrtable="deviceloc";
-    String statustable="devicestat";
-    String eventtable="event";
+    String statustable="bld_device_sensing";
     
     public SQLmod(String DB_URL, String USER, String PASS) throws SQLException{ //class constructor for setting url, user, password
         this.DB_URL=DB_URL;
@@ -30,120 +25,32 @@ public class SQLmod {
         this.PASS=PASS;
     }
     
-    public void event(String address, int zone, int occ) throws SQLException{
-        String status;
-        try{
-          if(occ==0x01){status="OCCUPIED";}else{status="UNOCCUPIED";}
-          Connection con = DriverManager.getConnection(DB_URL, USER, PASS);
-          ResultSet stat= con.createStatement().executeQuery("SELECT grup , location FROM "+adrtable+" WHERE address = '"+address+"'");
-          ResultSet rs = con.createStatement().executeQuery("SELECT occ FROM "+statustable+" WHERE address = '"+address+"' AND zone = "+zone+" "); 
-          while(stat.next()){ 
-            while(rs.next()){
-                if(!rs.getString("occ").equals(status)){
-                  String ins = "INSERT INTO "+eventtable+
-                  " VALUES (default,default,'"+address+"',"+zone+",'"+stat.getString("location")+"','"+stat.getString("grup")+"','"+status+"')";
-                  con.createStatement().executeUpdate(ins);
-                  System.out.println("Success in insert to "+eventtable);
-                }
-            }
-          }
-        }
-        catch(SQLException e){
-            System.out.println(e);
-        }
-        finally{
-            /*if(con!=null){ //closing connection
-            con.close();
-            }*/  
-        }
-       
-    }
+
     
     public void updateStatus(String address, int zone, int iocc, double lux, double setpoint, int ilamp, int imode ) throws SQLException{ // update Status table with data format [address, occ, light, lamp]
         //Connection con = DriverManager.getConnection(DB_URL, USER, PASS);
         String mode=null; String occ=null; String lamp=null;
         String upd=null;
-        if(imode==0x01){ mode="AUTO";} else{ mode="MANUAL";}
-		if(iocc==0x01){ occ="OCCUPIED";} else{occ="UNOCCUPIED";}
-		if(ilamp==0x01){ lamp="ON";} else{ lamp="OFF";}
         
-        try (Connection con = DriverManager.getConnection(DB_URL, USER, PASS)) {           
+        try (Connection con = DriverManager.getConnection(DB_URL, USER, PASS);Statement insupd=con.createStatement()) {           
             //searching address already available in table or not
-            try(Statement stmt1=con.createStatement();Statement insupd=con.createStatement()){
-                ResultSet rs = stmt1.executeQuery("SELECT address FROM "+adrtable+" WHERE address = '"+address+"'");
-                if(rs.next()==true){ //if "address found", update value in selected row
-                    System.out.println("Adress Found : "+address);
-                    rs.beforeFirst();
-                    while(rs.next()){
-                       try (Statement stmt2 = con.createStatement()){
-                           //searching zone already in table or not
-                           ResultSet stat = stmt2.executeQuery("SELECT zone FROM "+statustable+" WHERE address = '"+address+"'");
-                           if(stat.next()==true){ //if "zone found", update value in selected row
-                                    System.out.println("Zone Found : zone "+zone);
-                                    stat.beforeFirst();
-                                    while(stat.next()){
-                                            upd = "UPDATE "+statustable+" SET address = '"+address+"' , mode = '"+mode+"' , occ = '"+occ+"' , lux = "+lux+" , setpoint = "+setpoint+" , lamp = '"+lamp+"' WHERE zone = "+zone+" ";
-                                            insupd.executeUpdate(upd);
-                                            System.out.println("Success in update "+zone+" in "+address+", ");
-                                    }
-                            }
-                            else{ // if "zone not found" not insert new row
-                                    upd = "INSERT INTO "+statustable+
-                                    " VALUES (default,"+zone+",'"+address+"','"+mode+"','"+occ+"',"+lux+","+setpoint+",'"+lamp+"',default)";
-                                    insupd.executeUpdate(upd);
-                                    System.out.println("Success in insert to"+statustable+" in "+address+", ");
-                            }
-                       }
-                       catch(SQLException e){
-                           System.out.println(e);
-                       }
-                    }
-                }
-                else{ // if "address not found" insert new row
-                    upd = "INSERT INTO "+adrtable+
-                            " VALUES ('"+address+"','"+address+"',default)";
-                    insupd.executeUpdate(upd);
-                    System.out.println("Success in insert to"+adrtable);
+                upd = "UPDATE "+statustable+
+                        " SET time_sensing = default , value = "+lux+" WHERE attached_sensor_id = '00 13 a2 00 40 8b 5e 9f-01'";
+                insupd.executeUpdate(upd);
 
-                    upd = "INSERT INTO "+statustable+
-                                " VALUES (default,"+zone+",'"+address+"','"+mode+"','"+occ+"',"+lux+","+setpoint+",'"+lamp+"',default)";
-                    insupd.executeUpdate(upd);
-                    System.out.println("Success in insert to"+statustable+" in "+address+", ");
-                }
-            }
-            catch(SQLException e){
-                System.out.println(e);
-            }
+                upd = "UPDATE "+statustable+
+                        " SET time_sensing = default ,value = "+iocc+" WHERE attached_sensor_id = '00 13 a2 00 40 8b 5e 9f-02'";
+                insupd.executeUpdate(upd);
+                
+                upd = "UPDATE "+statustable+
+                        " SET time_sensing = default ,value = "+ilamp+" WHERE attached_sensor_id = '00 13 a2 00 40 8b 5e 9f-03'";
+                insupd.executeUpdate(upd);
+                System.out.println("Success in update"+statustable);              
         }
         catch(SQLException e){
             System.out.println(e);
         }
     }
-    
-    public QContainer[] identifyWrite() throws SQLException, ClassNotFoundException{ //method for identify which device in manual mode
-        List<QContainer> xdata= new ArrayList<>();
-        try {
-            Class.forName("com.mysql.jdbc.Driver"); 
-            Connection con = DriverManager.getConnection(DB_URL, USER, PASS);
-            //searching device in write mode
-            ResultSet rs = con.createStatement().executeQuery("SELECT adress, zone, mode, setpoint, lamp FROM "+statustable+" WHERE stat = 'W'"); //create query
-            while(rs.next()){
-                xdata.add(new QContainer(rs.getString("address"),rs.getString("mode"),rs.getInt("zone"),rs.getFloat("setpoint"),rs.getString("lamp"))); //save query data to new variable type : QContainer
-            //turn write status into read
-            }
-            String update="UPDATE "+statustable+" SET stat = 'R' "+"WHERE stat = 'W'"; //set row mode back to read
-            con.createStatement().executeUpdate(update);
-	}
-        catch(SQLException e){
-            System.out.println(e);
-        }
-        finally{
-            /*if(con!=null){
-            con.close();
-            }*/  
-        }
-        QContainer[] valAdd =new QContainer[xdata.size()];
-        valAdd = xdata.toArray(valAdd);
-        return valAdd; //return device addresses in which in manual mode
-    } //method for identify which device commanded to be manual
 }
+    
+   

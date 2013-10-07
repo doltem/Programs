@@ -21,10 +21,9 @@ public class XbeeGateway {
     }
     
     public static void tesGateway() throws Exception {
-        String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
         XbeeSR xbeedata=new XbeeSR ("COM11", 9600); //create connection to xbee com port
         //xbeedata.setDB(dburl,dbuser,dbpass); //connect xbee object to database
-        SQLmod dbase=new SQLmod(dburl,dbuser,dbpass); //create connection to MySQL 
+        SQLmod dbase=new SQLmod("jdbc:mysql://localhost:3306/indisbuilding_db","root",""); //create connection to MySQL 
         
         String addr="a"; int occ=0; double lux=0; double setpoint=0; int lamp=0; int mode=0; int zone=0;
         int i=0;
@@ -50,6 +49,7 @@ public class XbeeGateway {
                 System.out.println("5.Mode Operasi : "+mode);
                 dbase.updateStatus(addr, zone, occ, lux, setpoint, lamp,mode);
             System.out.println("Iterasi ke-"+i+",");
+            System.out.println("");
             i++;
             }
             //dbase.updateStatus(addr, zone, occ, lux, setpoint, lamp,mode);

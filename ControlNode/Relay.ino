@@ -61,7 +61,7 @@
 
 //LED mapping
 #define setLed 7
-#define statusLed 7
+#define statusLed 4
 #define modeLed 7
 #define setButton 3
 #define manSwitch 2
@@ -83,7 +83,9 @@ double ddump=-1;
 
 ///sensor value table
 int pirval[5] = { 0, -1, -1, -1,-1};
-double lightval[5] = { 0, -1, -1, -1,-1};
+double lightval[5] = { 0, -1, -1, -1,-1}; //final value of lighting levele
+double lightves[5]= { 0, 0, 0, 0, 0}; //vessel for determine lighting level value mean after a cycle
+int lightcount=0; //counter for each lighting level sensor reading
 
 ///zone mapping table , always insert -1 if element not used. in some table rightmost column or lowest row, used -1 as table limit
 int *zonepir [5][4] = { //pir mapping to zones
@@ -115,9 +117,9 @@ double zonelight [3][4] ={ //light level and setpoint status of each zones
 };
 
 ///pin mapping, always insert -1 if element not used
-int zonerelay[5]= {4,-1,-1,-1,-1}; //pin mapping for relay
-int pinpir[5] = {3,-1,-1,-1,-1}; //pin mapping for pir
-int pinlight[5] = {A6,-1,-1,-1,-1}; //pin mapping for light level sensor
+int zonerelay[5]= {6,-1,-1,-1,-1}; //pin mapping for relay
+int pinpir[5] = {12,-1,-1,-1,-1}; //pin mapping for pir
+int pinlight[5] = {A0,-1,-1,-1,-1}; //pin mapping for light level sensor
 
 //operational VARIABLE
 byte aktif=0;
@@ -147,8 +149,8 @@ void setup() {
   	
 	byte c=0; //mode setting for relay pin
 	while(zonerelay[c]!=-1){
-                Serial.print("nilai c : ");
-                Serial.println(c);
+                //Serial.print("nilai c : ");
+                //Serial.println(c);
 		pinMode(zonerelay[c],OUTPUT);
 		c++;
 	}
@@ -188,10 +190,8 @@ void loop() {
 //functions for sending and receiving packet
 void checkPacket(){
 	if (xbee.readPacket(500)) {
-		//led action
-		flashLed(statusLed, 2, 300);
-
 		if (xbee.getResponse().getApiId() == ZB_RX_RESPONSE) {//get RX response
+			flashLed(statusLed, 3, 100);
 			xbee.getResponse().getZBRxResponse(rx); //fill response to RX
 			int clusterID=joinBit(rx.getData(2),rx.getData(3),16);
 			
@@ -202,24 +202,13 @@ void checkPacket(){
 				zonelight[1][zone]=getLight(rx.getData(18),rx.getData(19));
 			}
 		} 
-		else if (xbee.getResponse().getApiId() == MODEM_STATUS_RESPONSE) { // get modem status response
-			xbee.getResponse().getModemStatusResponse(msr);      
-			if (msr.getStatus() == ASSOCIATED) { //Associated in Network
-			  flashLed(statusLed, 3, 500);
-			} else if (msr.getStatus() == DISASSOCIATED) { //Dissociated in Network
-			  flashLed(statusLed, 7, 100);
-			} else {
-			  // another status
-			  flashLed(statusLed, 10, 10);
-			}
-		} 
 		else if (xbee.getResponse().getApiId() == ZB_TX_STATUS_RESPONSE) {
 			xbee.getResponse().getZBTxStatusResponse(txStatus);
 
 			// get the delivery status, the fifth byte
 			if (txStatus.getDeliveryStatus() == SUCCESS) {
 				// success.  time to celebrate
-				flashLed(8, 3, 100);
+				flashLed(statusLed, 2, 50);
 			} else {
 				// the remote XBee did not receive our packet. is it powered on?
 				//flashLed(statusLed, 3,500);
@@ -254,21 +243,24 @@ void sendStatus(){
 void readSensor(){
 	byte i=0; //counter
 	while(pinpir[i]!=-1){
-		pirval[i]=digitalRead(pinpir[i]);
+		int pirvesel=digitalRead(pinpir[i]);
+		if (pirvesel==HIGH) pirval[i]=0;
+		if (pirvesel==LOW) pirval[i]=1; 
                 //Serial.print("Nilai sensor Pir : ");
                 //Serial.println(pirval[i]);
 		i++;
 	}
 	i=0;
 	while(pinlight[i]!=-1){
-		lightval[i]=analogRead(pinlight[i]);
-		lightval[i]=lightval[i]/1024*5; //voltage value
-		lightval[i]=4*lightval[i]*100-9.77-0.97;
-		if(lightval[i]<0) lightval[i]=0; //illuminance value
+		lightves[i]=lightves[i]+analogRead(pinlight[i]);
+		lightves[i]=lightves[i]/1024*5; //voltage value
+		lightves[i]=4*lightves[i]*100-9.77-0.97;
+		if(lightves[i]<0) lightves[i]=0; //illuminance value
                 //Serial.print("Nilai sensor cahaya : ");
                 //Serial.println(lightval[i]);
 		i++;
 	}
+	lightcount++;
 }
 
 void updateStatus(){
@@ -278,7 +270,7 @@ void updateStatus(){
 		int j=0; //occupancy status row counter
 		int k=0; //light level row counter
 		byte occ=0;
-		double lux=*zonelux[0][i];
+		double lux=0;
 		while(*zonepir[j][i]!=-1){
                         //Serial.print("Nilai sensor Pir : ");
                         //Serial.println(*zonepir[j][i]);
@@ -291,14 +283,14 @@ void updateStatus(){
 		while(*zonelux[k][i]!=-1){
                         //Serial.print("Nilai sensor cahaya : ");
                         //Serial.println(*zonelux[k][i]);
-			lux=(lux+*zonelux[k][i])/2;
+			lux=lux+*zonelux[k][i];
 			k++;
 		}
 		                //Serial.print("Nilai sensor cahaya : ");
                         //Serial.println(lux);
 
 		zoneocclamp[1][i]=occ;
-		zonelight[0][i]=lux;
+		zonelight[0][i]=lux/k;
 		i++;
 	}
 }
@@ -327,8 +319,8 @@ void autoSwitch(){
 			}
 		}
 		//if device in manual , lamp activating based on assigned lamp value from HMI
-		//Serial.print("Nilai Lampu : ");
-		//Serial.println(zoneocclamp[0][j]);
+				//Serial.print("Nilai Lampu : ");
+				//Serial.println(zoneocclamp[0][j]);
 		digitalWrite(zonerelay[j], zoneocclamp[0][j]);
 		j++;
 	}
@@ -428,8 +420,14 @@ int pangkat(int val, int expo){
 
 //Timer ISR for activating xbee
 void activate(){
-	aktif=1;
 	//Serial.println("Timer Activated");
+	int i=0;
+	aktif=1;
+	while(pinlight[i]!=-1){
+		lightval[i]=lightves[i]/lightcount; //get mean value of lighting level reading
+		i++;
+	}
+	lightcount = 0;
 }
 
 //flashing led

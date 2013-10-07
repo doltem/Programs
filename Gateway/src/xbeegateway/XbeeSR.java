@@ -12,67 +12,34 @@ package xbeegateway;
 
 import com.rapplogic.xbee.api.ApiId;
 import com.rapplogic.xbee.api.XBee;
-import com.rapplogic.xbee.api.XBeeAddress64;
 import com.rapplogic.xbee.api.XBeeResponse;
-import com.rapplogic.xbee.api.ErrorResponse;
-import com.rapplogic.xbee.api.XBeeTimeoutException;
 import com.rapplogic.xbee.api.zigbee.ZNetRxResponse;
-import com.rapplogic.xbee.api.zigbee.ZNetTxRequest;
-import com.rapplogic.xbee.api.zigbee.ZNetTxStatusResponse;
 import com.rapplogic.xbee.util.ByteUtils;
 import com.rapplogic.xbee.api.XBeeException;
-import java.math.*;
 /**
  *
  * @author A.R. Dzulqarnain
  */
 public class XbeeSR {
-    //constants
-    private static final short EndGateway = 0x80;
-    private static final short MCustomCluster = 0x10;
-    private static final short LCustomCluster = 0x00;
-    private static final short FCClient2Server = 0x48;
-    private static final short Trans = 0x00;
-    private static final short CWriteAttribute = 0x02;
-    private static final short DT8Bitmap = 0x18;
-    private static final short DT16Uint = 0x21;
-    private static final short LMode = 0x04;
-    private static final short LLamp = 0x01;
-    private static final short LSetPoint = 0x03;
-    
     //Xbee Class declaration
     Bitplay bitplay=new Bitplay();
     XBee xbee = new XBee();
     XBeeResponse response = null;
     ZNetRxResponse rx=null;
-    
-    //data structure for sending to remote xbee
-    QContainer[] qdata=null;
-    
-    //variable for creating database
-    String url; String user; String pass;
-    //variable
-    
-    String gatePort;
-    int baudRate;
+
     boolean avail=false;
     int[] data=new int[30];
     String remoteAddr;
-    int[] intAddr;
+    int[] intAddr=null;
     
     public XbeeSR(String sPort, int baud) throws XBeeException{
-        gatePort=sPort;
-        baudRate=baud;
+        String gatePort=sPort;
+        int baudRate=baud;
         try {
             xbee.open(gatePort, baudRate);   
         }
         catch (XBeeException e){
             //System.out.println(e);
-        }
-        finally{
-            if(xbee.isConnected()){
-                //xbee.close();
-            }
         }
     }
     
@@ -89,11 +56,6 @@ public class XbeeSR {
         }
         catch (XBeeException | ClassCastException e){
             System.out.println(e);
-        }
-        finally{
-            if(xbee.isConnected()){
-                //xbee.close();
-            }
         }
     }
    
@@ -132,55 +94,6 @@ public class XbeeSR {
         boolean stat=avail;
         avail=false;
         return stat;
-    }
-    
-    public void setDB(String url, String user, String pass){
-        this.url=url;
-        this.user=user;
-        this.pass=pass;
-    }
-    
-    public void sendDataLight()throws Exception{
-        SQLmod dbase=new SQLmod(url,user,pass);
-        //get data of adress with write status from database
-        qdata=dbase.identifyWrite();
-        try {
-            xbee.open(gatePort, baudRate);
-            for(int i=0;i<qdata.length;i++){
-                //olah data setpoint jadi LSB dan MSB
-                Bitplay olah=new Bitplay();
-                double LightSet=10000*Math.log10(qdata[i].setpoint);
-                int LightSetMSB=olah.getMSB((int)LightSet, 16);
-                int LightSetLSB=olah.getLSB((int)LightSet, 16);
-                //target address
-                XBeeAddress64 addr64 = new XBeeAddress64(qdata[i].address);
-                // create an array of arbitrary data to send
-                int[] payload = new int[] { EndGateway, qdata[i].zone, MCustomCluster, LCustomCluster, FCClient2Server, Trans, CWriteAttribute, 0x00,LMode, DT8Bitmap, qdata[i].mode, 0x00, LLamp, DT8Bitmap, qdata[i].lamp, 0x00, LSetPoint, DT16Uint, LightSetMSB, LightSetLSB};
-                // first request we just send 64-bit address.  we get 16-bit network address with status response
-                ZNetTxRequest request = new ZNetTxRequest(addr64, payload);
-                try {
-                    ZNetTxStatusResponse response = (ZNetTxStatusResponse) xbee.sendSynchronous(request, 10000);
-                    // update frame id for next request
-                    request.setFrameId(xbee.getNextFrameId());
-                    if (response.getDeliveryStatus() == ZNetTxStatusResponse.DeliveryStatus.SUCCESS) {
-                       System.out.println("Packet delivery success");
-                    } else {
-                       System.out.println("Packet delivery failed");
-                    }				
-                } 
-                catch (XBeeTimeoutException e) {
-                    System.out.println(e);
-                }
-            }
-        }
-        catch (Exception e){
-           System.out.println(e);
-        }
-        finally{
-            if(xbee.isConnected()){
-                //xbee.close();
-            }
-        }
     }
 
 }
