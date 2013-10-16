@@ -197,9 +197,9 @@ void checkPacket(){
 			
 			if(clusterID==CustomCluster){//act based on determined Cluster ID
 				byte zone=rx.getData(1)-1;
-				zoneocclamp[2][zone] = rx.getData(10);
-				zoneocclamp[1][zone]= rx.getData(14); //lamp value
-				zonelight[1][zone]=getLight(rx.getData(18),rx.getData(19));
+				zoneocclamp[2][zone] = rx.getData(10); //mode
+				zoneocclamp[0][zone]= rx.getData(14); //lamp value
+				zonelight[1][zone]=getLight(rx.getData(18),rx.getData(19)); //setpoint
 			}
 		} 
 		else if (xbee.getResponse().getApiId() == ZB_TX_STATUS_RESPONSE) {

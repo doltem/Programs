@@ -45,6 +45,7 @@ public class XbeeSR {
     XBee xbee = new XBee();
     XBeeResponse response = null;
     ZNetRxResponse rx=null;
+    ZNetTxStatusResponse txresponse=null;
     
     //data structure for sending to remote xbee
     QContainer[] qdata=null;
@@ -140,12 +141,11 @@ public class XbeeSR {
         this.pass=pass;
     }
     
-    public void sendDataLight()throws Exception{
+    public void sendDataLight(String url, String user, String pass)throws Exception{
         SQLmod dbase=new SQLmod(url,user,pass);
         //get data of adress with write status from database
         qdata=dbase.identifyWrite();
         try {
-            xbee.open(gatePort, baudRate);
             for(int i=0;i<qdata.length;i++){
                 //olah data setpoint jadi LSB dan MSB
                 Bitplay olah=new Bitplay();
@@ -159,10 +159,10 @@ public class XbeeSR {
                 // first request we just send 64-bit address.  we get 16-bit network address with status response
                 ZNetTxRequest request = new ZNetTxRequest(addr64, payload);
                 try {
-                    ZNetTxStatusResponse response = (ZNetTxStatusResponse) xbee.sendSynchronous(request, 10000);
+                    txresponse = (ZNetTxStatusResponse) xbee.sendSynchronous(request, 10000);
                     // update frame id for next request
                     request.setFrameId(xbee.getNextFrameId());
-                    if (response.getDeliveryStatus() == ZNetTxStatusResponse.DeliveryStatus.SUCCESS) {
+                    if (txresponse.getDeliveryStatus() == ZNetTxStatusResponse.DeliveryStatus.SUCCESS) {
                        System.out.println("Packet delivery success");
                     } else {
                        System.out.println("Packet delivery failed");

@@ -18,11 +18,34 @@ public class XbeeGateway {
      */
     public static void main(String[] args) throws Exception {
         tesGateway();
+        //tesEvent();
+        //tesWrite();
+    }
+    
+    public static void tesWrite() throws Exception {
+        int i=0;
+        while(true){
+            String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
+            XbeeSR xbeedata=new XbeeSR ("COM13", 9600); //create connection to xbee com port
+        //xbeedata.setDB(dburl,dbuser,dbpass); //connect xbee object to database
+            SQLmod dbase=new SQLmod(dburl,dbuser,dbpass); //create connection to MySQL 
+            xbeedata.sendDataLight(dburl,dbuser,dbpass);
+            System.out.println("Iterasi ke-"+i+",");
+            i++;
+        }
+    }
+        
+    public static void tesEvent() throws Exception {
+        while(true){
+        String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
+        SQLmod dbase=new SQLmod(dburl,dbuser,dbpass);
+        dbase.event("00 13 a2 00 40 8b 5e 9f",1,0);
+        }
     }
     
     public static void tesGateway() throws Exception {
         String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
-        XbeeSR xbeedata=new XbeeSR ("COM11", 9600); //create connection to xbee com port
+        XbeeSR xbeedata=new XbeeSR ("COM13", 9600); //create connection to xbee com port
         //xbeedata.setDB(dburl,dbuser,dbpass); //connect xbee object to database
         SQLmod dbase=new SQLmod(dburl,dbuser,dbpass); //create connection to MySQL 
         
@@ -45,11 +68,12 @@ public class XbeeGateway {
                 System.out.println("Zona Operasi : "+zone);
                 System.out.println("1.Status Lampu : "+lamp);
                 System.out.println("2.Status Okupansi : "+occ);
-                System.out.println("3.Tingkat Pencahayaan : "+lux);
-                System.out.println("4.Setpoint Pencahayaan : "+setpoint);
+                System.out.println("3.Tingkat Pencahayaan : "+lux+" lux");
+                System.out.println("4.Setpoint Pencahayaan : "+setpoint+" lux");
                 System.out.println("5.Mode Operasi : "+mode);
                 dbase.updateStatus(addr, zone, occ, lux, setpoint, lamp,mode);
             System.out.println("Iterasi ke-"+i+",");
+            System.out.println("");
             i++;
             }
             //dbase.updateStatus(addr, zone, occ, lux, setpoint, lamp,mode);
