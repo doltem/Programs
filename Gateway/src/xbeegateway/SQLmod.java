@@ -12,8 +12,6 @@ package xbeegateway;
  */
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SQLmod {
     String DB_URL;
@@ -115,25 +113,4 @@ public class SQLmod {
             System.out.println(e);
         }
     }
-    
-    public QContainer[] identifyWrite() throws SQLException, ClassNotFoundException{ //method for identify which device in manual mode
-        List<QContainer> xdata= new ArrayList<>();
-        try (Connection con = DriverManager.getConnection(DB_URL, USER, PASS);Statement stmt1=con.createStatement()) {
-            //searching device in write mode
-            ResultSet rs = stmt1.executeQuery("SELECT address, zone, mode, setpoint, lamp FROM "+statustable+" WHERE stat = 'W'"); //create query
-            while(rs.next()){
-                xdata.add(new QContainer(rs.getString("address"),rs.getString("mode"),rs.getInt("zone"),rs.getFloat("setpoint"),rs.getString("lamp"))); //save query data to new variable type : QContainer
-            //turn write status into read
-            }
-            String update="UPDATE "+statustable+" SET stat = 'R' "+"WHERE stat = 'W'"; //set row mode back to read
-            con.createStatement().executeUpdate(update);
-	}
-        catch(SQLException e){
-            System.out.println(e);
-        }
-
-        QContainer[] valAdd =new QContainer[xdata.size()];
-        valAdd = xdata.toArray(valAdd);
-        return valAdd; //return device addresses in which in manual mode
-    } //method for identify which device commanded to be manual
 }

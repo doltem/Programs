@@ -13,24 +13,25 @@ package xbeegateway;
  * 
  */
 public class XbeeGateway {
+    //for testing sending data : "UPDATE `devicestat` SET `mode`='MANUAL', `setpoint`='500',`lamp`='ON',`stat`='W' WHERE 1"
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) throws Exception {
-        tesGateway();
+        //tesGateway();
         //tesEvent();
-        //tesWrite();
+        tesWrite();
     }
     
     public static void tesWrite() throws Exception {
         int i=0;
-        while(true){
-            String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
-            XbeeSR xbeedata=new XbeeSR ("COM13", 9600); //create connection to xbee com port
+        String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
+        XbeeSR xbeedata=new XbeeSR ("COM13", 9600); //create connection to xbee com port
         //xbeedata.setDB(dburl,dbuser,dbpass); //connect xbee object to database
-            SQLmod dbase=new SQLmod(dburl,dbuser,dbpass); //create connection to MySQL 
+        SQLmod dbase=new SQLmod(dburl,dbuser,dbpass); //create connection to MySQL 
+        while(true){
             xbeedata.sendDataLight(dburl,dbuser,dbpass);
-            System.out.println("Iterasi ke-"+i+",");
+            //System.out.println("Iterasi ke-"+i+",");
             i++;
         }
     }

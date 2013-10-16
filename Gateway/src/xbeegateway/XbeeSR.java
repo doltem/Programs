@@ -22,6 +22,7 @@ import com.rapplogic.xbee.api.zigbee.ZNetTxStatusResponse;
 import com.rapplogic.xbee.util.ByteUtils;
 import com.rapplogic.xbee.api.XBeeException;
 import java.math.*;
+import java.sql.*;
 /**
  *
  * @author A.R. Dzulqarnain
@@ -142,34 +143,47 @@ public class XbeeSR {
     }
     
     public void sendDataLight(String url, String user, String pass)throws Exception{
-        SQLmod dbase=new SQLmod(url,user,pass);
-        //get data of adress with write status from database
-        qdata=dbase.identifyWrite();
-        try {
-            for(int i=0;i<qdata.length;i++){
+        String statustable="devicestat";
+        try (Connection con = DriverManager.getConnection(url, user, pass);Statement stmt1=con.createStatement();Statement stmt2=con.createStatement()){
+            ResultSet rs = stmt1.executeQuery("SELECT address, zone, mode, setpoint, lamp FROM "+statustable+" WHERE stat = 'W'"); //create query
+            Bitplay olah=new Bitplay();
+            double LightSet=0;int LightSetMSB=0;int LightSetLSB=0;
+            XBeeAddress64 addr64=null;
+            int[] payload=null;
+            ZNetTxRequest request=null;
+            int mode=0;
+            int lamp=0;
+            while(rs.next()){
+                //convert string value to int
+                if(rs.getString("mode").equals("AUTO")){mode=0x01;}else{mode=0x00;}
+                if(rs.getString("lamp").equals("ON")){lamp=0x01;}else{lamp=0x00;}
                 //olah data setpoint jadi LSB dan MSB
-                Bitplay olah=new Bitplay();
-                double LightSet=10000*Math.log10(qdata[i].setpoint);
-                int LightSetMSB=olah.getMSB((int)LightSet, 16);
-                int LightSetLSB=olah.getLSB((int)LightSet, 16);
+                LightSet=10000*Math.log10(rs.getFloat("setpoint"));
+                LightSetMSB=olah.getMSB((int)LightSet, 16);
+                LightSetLSB=olah.getLSB((int)LightSet, 16);
+
                 //target address
-                XBeeAddress64 addr64 = new XBeeAddress64(qdata[i].address);
+                addr64 = new XBeeAddress64(rs.getString("address"));
+
                 // create an array of arbitrary data to send
-                int[] payload = new int[] { EndGateway, qdata[i].zone, MCustomCluster, LCustomCluster, FCClient2Server, Trans, CWriteAttribute, 0x00,LMode, DT8Bitmap, qdata[i].mode, 0x00, LLamp, DT8Bitmap, qdata[i].lamp, 0x00, LSetPoint, DT16Uint, LightSetMSB, LightSetLSB};
+                payload = new int[] { EndGateway, rs.getInt("zone"), MCustomCluster, LCustomCluster, FCClient2Server, Trans, CWriteAttribute, 0x00,LMode, DT8Bitmap, mode, 0x00, LLamp, DT8Bitmap, lamp, 0x00, LSetPoint, DT16Uint, LightSetMSB, LightSetLSB};
+
                 // first request we just send 64-bit address.  we get 16-bit network address with status response
-                ZNetTxRequest request = new ZNetTxRequest(addr64, payload);
+                request = new ZNetTxRequest(addr64, payload);
+
                 try {
                     txresponse = (ZNetTxStatusResponse) xbee.sendSynchronous(request, 10000);
                     // update frame id for next request
                     request.setFrameId(xbee.getNextFrameId());
                     if (txresponse.getDeliveryStatus() == ZNetTxStatusResponse.DeliveryStatus.SUCCESS) {
                        System.out.println("Packet delivery success");
+                       stmt2.executeUpdate("UPDATE "+statustable+" SET stat = 'R' "+"WHERE address = '"+rs.getString("address")+"' AND zone='"+rs.getInt("zone")+"'");
                     } else {
                        System.out.println("Packet delivery failed");
                     }				
                 } 
                 catch (XBeeTimeoutException e) {
-                    System.out.println(e);
+                        System.out.println(e);
                 }
             }
         }
