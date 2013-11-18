@@ -47,6 +47,8 @@
 #define LightValueLSB 0 //LSB of light level value
 #define LightSetMSB 0 //MSB of light level set point value
 #define LightSetLSB 0 //LSB of light level set point value
+#define LightBandMSB 0 //MSB of light level error band value
+#define LightBandLSB 0 //LSB of light level error band value
 #define Lamp 0 //operatioan mode status -> AUTO
 #define mode 0x01 //operatioan mode status -> AUTO
 #define endpoint 1 //endpoint = zone
@@ -108,15 +110,18 @@ int zoneocclamp [3][4] ={  //lamp and occupancy status of each zones
 	{0, -1, -1, -1}, //lamp
 	{0, -1, -1, -1}, //occupancy
 	{AUTO, -1, -1, -1} //mode
+	{0, 0, 0, 0}//button state
 };
 
 double zonelight [3][4] ={ //light level and setpoint status of each zones
 	{0, -1, -1, -1}, //lux
 	{50, -1, -1, -1}, //setpoint
-	{5, -1, -1, -1} //error band
+	{5, -1, -1, -1}, //error band
 };
 
 ///pin mapping, always insert -1 if element not used
+byte modeButton=5;
+int button[5]={3,-1,-1,-1,-1};
 int zonerelay[5]= {6,-1,-1,-1,-1}; //pin mapping for relay
 int pinpir[5] = {12,-1,-1,-1,-1}; //pin mapping for pir
 int pinlight[5] = {A0,-1,-1,-1,-1}; //pin mapping for light level sensor
@@ -136,7 +141,7 @@ ZBTxStatusResponse txStatus = ZBTxStatusResponse();
 //Gateway Adress
 XBeeAddress64 GatewayAddr = XBeeAddress64(0x0013A200, 0x4092D859);
 //packet payload
-uint8_t StatPayload[] = {endpoint, EndGateway, MCustomCluster, LCustomCluster, FCServer2Client, Trans, CReportAttribute, 0x00,LOnOffId, DT8Bitmap, Lamp, 0x00, LOccId, DT8Bitmap, OccValue, 0x00, LLightId, DT16Uint, LightValueMSB, LightValueLSB, 0x00, LLightSetId, DT16Uint, LightSetMSB, LightSetLSB, 0x00,LMode, DT8Bitmap, mode};
+uint8_t StatPayload[] = {endpoint, EndGateway, MCustomCluster, LCustomCluster, FCServer2Client, Trans, CReportAttribute, 0x00,LOnOffId, DT8Bitmap, Lamp, 0x00, LOccId, DT8Bitmap, OccValue, 0x00, LLightId, DT16Uint, LightValueMSB, LightValueLSB, 0x00, LLightSetId, DT16Uint, LightSetMSB, LightSetLSB, 0x00, LLightBandId, DT16Uint, LightBandMSB, LightBandLSB,0x00,LMode, DT8Bitmap, mode};
 //Transmit Packets
 ZBTxRequest StatPacket = ZBTxRequest(GatewayAddr, StatPayload, sizeof(StatPayload));
 
@@ -182,7 +187,9 @@ void loop() {
 	checkPacket(); 		//check incoming packet
 	readSensor(); 		//reading sensor value and assigning to zones
 	updateStatus(); 	//update zone status
-	autoSwitch();	//actuating lamp based on status and mode
+	autoSwitch();	//relay activation decision based on status and mode
+	manualSwitch(); //manual switching relay based on button
+	relaySwitch(); //activating relay
 	if (aktif==1) sendStatus(); 	//Sending data to Gateway
 	//delay(500);Serial.println();
 }
@@ -200,6 +207,7 @@ void checkPacket(){
 				zoneocclamp[2][zone] = rx.getData(10); //mode
 				zoneocclamp[0][zone]= rx.getData(14); //lamp value
 				zonelight[1][zone]=getLight(rx.getData(18),rx.getData(19)); //setpoint
+				zonelight[2][zone]=getLight(rx.getData(23),rx.getData(24)); //error band
 			}
 		} 
 		else if (xbee.getResponse().getApiId() == ZB_TX_STATUS_RESPONSE) {
@@ -226,10 +234,11 @@ void sendStatus(){
 	byte j=0;
 	while(zonerelay[j]!=(-1)){
 		StatPayload[0]=j+1; //assign endpoint value to packet
-        StatPayload[28]=zoneocclamp[2][j]; //assign current mode status to packet
+        StatPayload[33]=zoneocclamp[2][j]; //assign current mode status to packet
 		StatPayload[14]=zoneocclamp[1][j]; //assign occupancy value to packet
 		StatPayload[10]=zoneocclamp[0][j]; //assign lamp status to packet
 		convertLight(zonelight[1][j], LUXSET); //assign light level set point value to packet
+		convertLight(zonelight[2][j], LUXBAND); //assign light level error band to packet
 		convertLight(zonelight[0][j], LUXLEVEL); //assign light level value to packet
 		xbee.send(StatPacket);
 		aktif=0;
@@ -298,7 +307,7 @@ void updateStatus(){
 	}
 }
 
-//functions for lamp switching
+//functions for auto swtiching
 void autoSwitch(){
 	byte j=0;
 	while(zonerelay[j]!=-1){
@@ -321,27 +330,53 @@ void autoSwitch(){
 				zoneocclamp[0][j]=OFF;
 			}
 		}
-		//if device in manual , lamp activating based on assigned lamp value from HMI
-				//Serial.print("Nilai Lampu : ");
-				//Serial.println(zoneocclamp[0][j]);
-		digitalWrite(zonerelay[j], zoneocclamp[0][j]);
 		j++;
 	}
 }
 
-/*void manualSwitch(){
-	byte i=0;
-	if(mode==AUTO){ 
-		mode=MANUAL;
-		while(zonerelay[i]!=-1){
-			digitalWrite(zonerelay[i],LOW);
-			i++;
-		}
+//function for manual button
+void manualSwitch(){
+	byte j=0;
+	if(digitalRead(modeButton)==LOW){
+        while(zonerelay[j]!=-1){
+            if(digitalRead(button[j])==HIGH && zoneocclamp[3][j]==0){
+                    zoneocclamp[3][i]=1;
+            }
+            else if(digitalRead(button[j])==LOW && zoneocclamp[3][j]==1){
+                if(zoneocclamp[0][j]==1){
+                    zoneocclamp[0][j]=0;
+                    zoneocclamp[2][j]=MANUAL;
+                }
+                else{
+                    zoneocclamp[0][j]=1;
+	                zoneocclamp[2][j]=MANUAL;
+                }
+                zoneocclamp[3][j]=0;
+            }
+        j++;
+        }
+    }
+    else{
+        while(zonerelay[j]!=-1){
+            if(digitalRead(button[j])==HIGH && zoneocclamp[3][j]==0){
+                zoneocclamp[3][i]=1;
+            }
+            else if(digitalRead(button[j])==LOW && zoneocclamp[3][j]==1){
+            	zoneocclamp[2][j]=AUTO;
+            	zoneocclamp[3][j]=0;
+            }
+        j++;
+    }
+}
+
+//function for activating relay
+void relaySwitch(){
+	byte j=0;
+	while(zonerelay[j]!=-1){
+		digitalWrite(zonerelay[j], zoneocclamp[0][j]);
+		j++;
 	}
-	else {
-		mode=AUTO;
-	}
-}*/
+}
 
 //function for set light level treshold
 void setPoint(){
@@ -365,6 +400,11 @@ void convertLight(double lux, byte type){
 	lux=10000*log10(lux)+1; //mapped to zigbee standard
 	lux=(int) lux;
 	switch(type){
+		case LUXBAND:
+			StatPayload[28]=getMSB(lux,16); //fill in lighterrobandMSB value to packet
+			StatPayload[29]=getLSB(lux,16); //fill in lighterrobandLSB value to packet
+		break;
+
 		case LUXSET:
 			StatPayload[23]=getMSB(lux,16); //fill in lightsetMSB value to packet
 			StatPayload[24]=getLSB(lux,16); //fill in lightsetLSB value to packet

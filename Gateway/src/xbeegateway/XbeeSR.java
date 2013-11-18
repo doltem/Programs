@@ -41,18 +41,24 @@ public class XbeeSR {
     private static final short LLamp = 0x01;
     private static final short LSetPoint = 0x03;
     
+    private static final short ZONE = 0X01;
+    private static final short MODE = 0X02;
+    private static final short LAMP = 0X03;
+    private static final short OCC = 0X04;
+    private static final short LIGHT = 0X05;
+    private static final short SPOINT = 0X06;
+    private static final short EBAND = 0X07;
+    
     //Xbee Class declaration
     Bitplay bitplay=new Bitplay();
     XBee xbee = new XBee();
     XBeeResponse response = null;
     ZNetRxResponse rx=null;
-    ZNetTxStatusResponse txresponse=null;
+    ZNetTxStatusResponse tx=null;
     
     //data structure for sending to remote xbee
     QContainer[] qdata=null;
     
-    //variable for creating database
-    String url; String user; String pass;
     //variable
     
     String gatePort;
@@ -98,20 +104,49 @@ public class XbeeSR {
             }
         }
     }
-   
-    public int getData(int pos){
-        return data[pos];
+
+    
+    public double getLight(int type){ //method for getting16bit data from parsed packet
+        double val=0;
+        switch(type){
+            case LIGHT:{
+                val= bitplay.joinBit(getData(18),getData(19),16);
+                val= Math.pow(10,((val-1)/10000));
+            }
+            
+            case SPOINT:{
+                val= bitplay.joinBit(getData(23),getData(24),16);
+                val= Math.pow(10,((val-1)/10000));
+            }
+            
+            case EBAND:{
+                val= bitplay.joinBit(getData(28),getData(29),16);
+                val= Math.pow(10,((val-1)/10000));
+            } 
+        }
+        return val;
     }
     
-    public int getData16(int pos1, int pos2){ //method for getting16bit data from parsed packet
-        int value=bitplay.joinBit(getData(pos1),getData(pos2),16);
-        return value;
-    }
-    
-    public double getLight(int pos1, int pos2){ //method for getting16bit data from parsed packet
-        double value=getData16(pos1,pos2);
-        value= Math.pow(10,((value-1)/10000));
-        return value;
+    public int getData(int type){
+        int val=0;
+        switch(type){
+            case ZONE:{
+                val= data[0];
+            }
+            
+            case MODE:{
+                val= data[33];
+            }
+            
+            case LAMP:{
+               val= data[10];
+            } 
+                
+            case OCC:{
+                val= data[14];
+            } 
+        }
+        return val;
     }
     
     public String getRemoteAddr(){ //method for getting sender Adress from parsed packets
@@ -136,65 +171,30 @@ public class XbeeSR {
         return stat;
     }
     
-    public void setDB(String url, String user, String pass){
-        this.url=url;
-        this.user=user;
-        this.pass=pass;
-    }
+    public void sendPacket(QContainer box) throws XBeeException{
+        XBeeAddress64 addr64=new XBeeAddress64(box.getAddress());
+        int[] payload=box.getPacket();
+            System.out.println(box.getAddress());
+            for(int i=0;i<payload.length;i++){
+                System.out.print(Integer.toHexString(payload[i]));
+                System.out.print(" ");
+            }
+        ZNetTxRequest request=new ZNetTxRequest(addr64, payload);
+        try {
+            tx = (ZNetTxStatusResponse) xbee.sendSynchronous(request, 10000);
+            // update frame id for next request
+            request.setFrameId(xbee.getNextFrameId());
+            if (tx.getDeliveryStatus() == ZNetTxStatusResponse.DeliveryStatus.SUCCESS) {
+               System.out.println("Packet delivery success");
+            } else {
+               System.out.println("Packet delivery failed");
+            }
+        }
+        catch (XBeeTimeoutException e) {
+                System.out.println(e);
+        }
+     }
     
-    public void sendDataLight(String url, String user, String pass)throws Exception{
-        String statustable="devicestat";
-        try (Connection con = DriverManager.getConnection(url, user, pass);Statement stmt1=con.createStatement();Statement stmt2=con.createStatement()){
-            ResultSet rs = stmt1.executeQuery("SELECT address, zone, mode, setpoint, lamp FROM "+statustable+" WHERE stat = 'W'"); //create query
-            Bitplay olah=new Bitplay();
-            double LightSet=0;int LightSetMSB=0;int LightSetLSB=0;
-            XBeeAddress64 addr64=null;
-            int[] payload=null;
-            ZNetTxRequest request=null;
-            int mode=0;
-            int lamp=0;
-            while(rs.next()){
-                //convert string value to int
-                if(rs.getString("mode").equals("AUTO")){mode=0x01;}else{mode=0x00;}
-                if(rs.getString("lamp").equals("ON")){lamp=0x01;}else{lamp=0x00;}
-                //olah data setpoint jadi LSB dan MSB
-                LightSet=10000*Math.log10(rs.getFloat("setpoint"));
-                LightSetMSB=olah.getMSB((int)LightSet, 16);
-                LightSetLSB=olah.getLSB((int)LightSet, 16);
-
-                //target address
-                addr64 = new XBeeAddress64(rs.getString("address"));
-
-                // create an array of arbitrary data to send
-                payload = new int[] { EndGateway, rs.getInt("zone"), MCustomCluster, LCustomCluster, FCClient2Server, Trans, CWriteAttribute, 0x00,LMode, DT8Bitmap, mode, 0x00, LLamp, DT8Bitmap, lamp, 0x00, LSetPoint, DT16Uint, LightSetMSB, LightSetLSB};
-
-                // first request we just send 64-bit address.  we get 16-bit network address with status response
-                request = new ZNetTxRequest(addr64, payload);
-
-                try {
-                    txresponse = (ZNetTxStatusResponse) xbee.sendSynchronous(request, 10000);
-                    // update frame id for next request
-                    request.setFrameId(xbee.getNextFrameId());
-                    if (txresponse.getDeliveryStatus() == ZNetTxStatusResponse.DeliveryStatus.SUCCESS) {
-                       System.out.println("Packet delivery success");
-                       stmt2.executeUpdate("UPDATE "+statustable+" SET stat = 'R' "+"WHERE address = '"+rs.getString("address")+"' AND zone='"+rs.getInt("zone")+"'");
-                    } else {
-                       System.out.println("Packet delivery failed");
-                    }				
-                } 
-                catch (XBeeTimeoutException e) {
-                        System.out.println(e);
-                }
-            }
-        }
-        catch (Exception e){
-           System.out.println(e);
-        }
-        finally{
-            if(xbee.isConnected()){
-                //xbee.close();
-            }
-        }
-    }
+    
 
 }

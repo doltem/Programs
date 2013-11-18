@@ -1,0 +1,4 @@
+
+2.Array for Error Band * -->need changed in java , and node receiveng algorithm
+3.Manual button
+3.Sending Command refinement
