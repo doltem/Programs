@@ -15,17 +15,17 @@ import java.sql.*;
 import java.util.ArrayList;
 
 public class SQLmod {
-    private static final short EndGateway = 0x80;
-    private static final short MCustomCluster = 0x10;
-    private static final short LCustomCluster = 0x00;
-    private static final short FCClient2Server = 0x48;
-    private static final short Trans = 0x00;
-    private static final short CWriteAttribute = 0x02;
-    private static final short DT8Bitmap = 0x18;
-    private static final short DT16Uint = 0x21;
-    private static final short LMode = 0x04;
-    private static final short LLamp = 0x01;
-    private static final short LSetPoint = 0x03;
+    private static final int EndGateway = 0x80;
+    private static final int MCustomCluster = 0x10;
+    private static final int LCustomCluster = 0x00;
+    private static final int FCClient2Server = 0x48;
+    private static final int Trans = 0x00;
+    private static final int CWriteAttribute = 0x02;
+    private static final int DT8Bitmap = 0x18;
+    private static final int DT16Uint = 0x21;
+    private static final int LMode = 0x04;
+    private static final int LLamp = 0x01;
+    private static final int LSetPoint = 0x03;
     
     String DB_URL;
     String USER;
@@ -84,8 +84,10 @@ public class SQLmod {
                            if(stat.next()==true){ //if "zone found", update value in selected row
                                     //System.out.println("Zone Found : zone "+zone);
                                     stat.beforeFirst();
+                                    System.out.print("nilai lampu: ");
+                                    System.out.println(lamp);
                                     while(stat.next()){
-                                            upd = "UPDATE "+statustable+" SET address = '"+address+"' , mode = '"+mode+"' , occ = "+occ+" , lux = "+lux+" , setpoint = "+setpoint+" , lamp = "+lamp+", lamp="+eband+" WHERE zone = "+zone+" ";
+                                            upd = "UPDATE "+statustable+" SET address = '"+address+"' , mode = '"+mode+"' , occ = "+occ+" , lux = "+lux+" , setpoint = "+setpoint+" , lamp = "+lamp+", errorband="+eband+" WHERE zone = "+zone+" ";
                                             insupd.executeUpdate(upd);
                                             System.out.println("Berhasil memasukkan data ke database dari zona "+zone+" di alamat "+address+", ");
                                     }
@@ -126,7 +128,7 @@ public class SQLmod {
     public boolean checkCommand() throws SQLException{ // update Status table with data format [address, occ, light, lamp]
         boolean val=false;
         try (Connection con = DriverManager.getConnection(DB_URL, USER, PASS);Statement allfind=con.createStatement()) {
-            ResultSet allset = allfind.executeQuery("SELECT zone, address, sensor_id, value FROM "+commandtable+" ");
+            ResultSet allset = allfind.executeQuery("SELECT zone, address, id FROM "+commandtable+" ");
             if(allset.next()){
                 val=true;
             }

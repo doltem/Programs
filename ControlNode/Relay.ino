@@ -115,15 +115,15 @@ int zoneocclamp [3][4] ={  //lamp and occupancy status of each zones
 
 double zonelight [3][4] ={ //light level and setpoint status of each zones
 	{0, -1, -1, -1}, //lux
-	{50, -1, -1, -1}, //setpoint
+	{0, -1, -1, -1}, //setpoint
 	{5, -1, -1, -1}, //error band
 };
 
 ///pin mapping, always insert -1 if element not used
-byte modeButton=5;
-int button[5]={3,-1,-1,-1,-1};
-int zonerelay[5]= {6,-1,-1,-1,-1}; //pin mapping for relay
-int pinpir[5] = {12,-1,-1,-1,-1}; //pin mapping for pir
+byte modeButton=4;
+int button[5]={7,-1,-1,-1,-1};
+int zonerelay[5]= {10,-1,-1,-1,-1}; //pin mapping for relay
+int pinpir[5] = {8,-1,-1,-1,-1}; //pin mapping for pir
 int pinlight[5] = {A0,-1,-1,-1,-1}; //pin mapping for light level sensor
 
 //operational VARIABLE

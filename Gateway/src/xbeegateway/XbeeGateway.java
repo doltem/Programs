@@ -41,7 +41,7 @@ public class XbeeGateway {
     
     public static void tesGateway() throws Exception {
         String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
-        XbeeSR xbeedata=new XbeeSR ("COM13", 9600); //create connection to xbee com port
+        XbeeSR xbeedata=new XbeeSR ("COM11", 9600); //create connection to xbee com port
         //xbeedata.setDB(dburl,dbuser,dbpass); //connect xbee object to database
         SQLmod dbase=new SQLmod(dburl,dbuser,dbpass); //create connection to MySQL 
         

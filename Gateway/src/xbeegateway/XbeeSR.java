@@ -92,6 +92,11 @@ public class XbeeSR {
                 remoteAddr=ByteUtils.toBase16(rx.getRemoteAddress64().getAddress());
                 intAddr=rx.getRemoteAddress64().getAddress();
                 data=rx.getData();
+                for(int i=0;i<data.length;i++){
+                    System.out.print(data[i]);
+                    System.out.print(" ");
+                }
+                System.out.println();
                 avail=true;
             }
         }
@@ -110,19 +115,20 @@ public class XbeeSR {
         double val=0;
         switch(type){
             case LIGHT:{
-                val= bitplay.joinBit(getData(18),getData(19),16);
+                val= bitplay.joinBit(data[18],data[19],16);
                 val= Math.pow(10,((val-1)/10000));
             }
-            
+            break;
+                
             case SPOINT:{
-                val= bitplay.joinBit(getData(23),getData(24),16);
+                val= bitplay.joinBit(data[23],data[24],16);
                 val= Math.pow(10,((val-1)/10000));
-            }
+            }break;
             
             case EBAND:{
-                val= bitplay.joinBit(getData(28),getData(29),16);
+                val= bitplay.joinBit(data[28],data[29],16);
                 val= Math.pow(10,((val-1)/10000));
-            } 
+            }break;
         }
         return val;
     }
@@ -133,18 +139,22 @@ public class XbeeSR {
             case ZONE:{
                 val= data[0];
             }
+            break;
             
             case MODE:{
                 val= data[33];
             }
+            break;
             
             case LAMP:{
                val= data[10];
-            } 
+            }
+            break;
                 
             case OCC:{
                 val= data[14];
-            } 
+            }
+            break;
         }
         return val;
     }
