@@ -112,7 +112,7 @@ int zoneocclamp [3][4] ={  //lamp and occupancy status of each zones
 
 double zonelight [3][4] ={ //light level and setpoint status of each zones
 	{0, -1, -1, -1}, //lux
-	{50, -1, -1, -1}, //setpoint
+	{20, -1, -1, -1}, //setpoint
 	{5, -1, -1, -1} //error band
 };
 

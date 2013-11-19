@@ -40,14 +40,31 @@ public class XbeeGateway {
                 setpoint=xbeedata.getLight(23,24);
                 mode=xbeedata.getData(28);
                 
-                System.out.println("Alamat Pengirim : "+addr);
-                System.out.println("Zona Operasi : "+zone);
-                System.out.println("1.Status Lampu : "+lamp);
-                System.out.println("2.Status Okupansi : "+occ);
-                System.out.println("3.Tingkat Pencahayaan : "+lux);
-                System.out.println("4.Setpoint Pencahayaan : "+setpoint);
-                System.out.println("5.Mode Operasi : "+mode);
-                dbase.updateStatus(addr, zone, occ, lux, setpoint, lamp,mode);
+                System.out.println("Sender Adress : "+addr);
+                System.out.println("Operation Zone : "+zone);
+                if(lamp==1){
+                    System.out.println("1.Lamp Status : ON");
+                }
+                else{
+                    System.out.println("1.Lamp Status : OFF");
+                }
+                if(occ==1){
+                    System.out.println("2.Occupancy Status : Occupied");
+                }
+                else{
+                    System.out.println("2.Occupancy Status : Unoccupied");
+                }
+                System.out.print("3.Lighting Level : "+lux);
+                System.out.println(" lux");
+                System.out.print("4.Lighting Level Setpoint : "+setpoint);
+                System.out.println(" lux");
+                if(mode==1){
+                    System.out.println("5.Operation Mode : AUTO");
+                }
+                else{
+                    System.out.println("5.Operation Mode : MANUAL");
+                }
+                //dbase.updateStatus(addr, zone, occ, lux, setpoint, lamp,mode);
             System.out.println("Iterasi ke-"+i+",");
             System.out.println("");
             i++;
