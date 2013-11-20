@@ -1,0 +1,30 @@
+----------------PHP List Function-------------------
+0.login -> check token
+
+1.Get
+  -GetListArea () //get all Area Available -> Ruangview
+    -getlistruang (area) //getListofRuang/Device Available ->Statusview
+     -getListZona (ruang) -> Statusview
+      -getStatus (zona) -> Statusview
+  -GetEvent () ->EventView
+
+2.Put
+  -PutNameArea (newname,area) -> RenameButton
+  -PutNameRuang (newname,ruang,area) ->RenameButton
+  -PutNameZona (newname,zona,ruang,area) ->RenameButton
+
+3.Post
+  -PostCommand (zone,address,mode,setpoint,errorband,lamp) ->StatusView -> Setting & On/OffButton
+  -PostArea (name) ->InsertAreaButton ->New AreaView
+
+4.Delete
+  -DeleteArea (area) ->DeleteAreaButton
+  
+  
+-------------Table Requirement-------------------------
+-Area Table
+ ID | Area
+-Address -> name mapping table
+ Area | Address | Ruang
+-Zona -> name mapping table
+ Area | Ruang | Zona | ZoneName
