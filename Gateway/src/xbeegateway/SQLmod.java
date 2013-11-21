@@ -70,6 +70,7 @@ public class SQLmod {
     public void updateStatus(String address, int zone, int occ, double lux, double setpoint, double eband, int lamp, int mode ) throws SQLException{ // update Status table with data format [address, occ, light, lamp]
         //Connection con = DriverManager.getConnection(DB_URL, USER, PASS);
         String upd=null;
+        String alias=null;
         try (Connection con = DriverManager.getConnection(DB_URL, USER, PASS)) {           
             //searching address already available in table or not
             try(Statement stmt1=con.createStatement();Statement insupd=con.createStatement()){
@@ -93,8 +94,9 @@ public class SQLmod {
                                     }
                             }
                             else{ // if "zone not found" not insert new row
+                                    alias = "Zona"+zone;
                                     upd = "INSERT INTO "+statustable+
-                                    " VALUES (default,"+zone+",'"+address+"',"+mode+","+occ+","+lux+","+setpoint+","+eband+","+lamp+")";
+                                    " VALUES (default,"+zone+",'"+alias+"','"+address+"',"+mode+","+occ+","+lux+","+setpoint+","+eband+","+lamp+")";
                                     insupd.executeUpdate(upd);
                                     System.out.println("Success in insert to"+statustable+" in "+address+", ");
                             }

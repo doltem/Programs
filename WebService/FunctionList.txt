@@ -4,8 +4,8 @@
 1.Get
   -GetListArea () //get all Area Available -> Ruangview
     -getlistruang (area) //getListofRuang/Device Available ->Statusview
-     -getListZona (ruang) -> Statusview
-      -getStatus (zona) -> Statusview
+     -getListZona (address) -> Statusview
+	  -getStatus (address,zone) ->detailedSettingView
   -GetEvent () ->EventView
 
 2.Put
