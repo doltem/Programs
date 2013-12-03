@@ -31,7 +31,7 @@ public class XbeeGateway {
         while(true){
             xbeedata.parseResponse();
             if(xbeedata.isDataAvail()){
-                System.out.println("Data masuk");
+                System.out.println("Device Active");
                 zone=xbeedata.getData(0);
                 addr=xbeedata.getRemoteAddr();
                 lamp=xbeedata.getData(10);
@@ -65,7 +65,7 @@ public class XbeeGateway {
                     System.out.println("5.Operation Mode : MANUAL");
                 }
                 //dbase.updateStatus(addr, zone, occ, lux, setpoint, lamp,mode);
-            System.out.println("Iterasi ke-"+i+",");
+            System.out.println("Data in : "+i+",");
             System.out.println("");
             i++;
             }

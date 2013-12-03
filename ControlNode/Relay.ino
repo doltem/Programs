@@ -112,13 +112,13 @@ int zoneocclamp [3][4] ={  //lamp and occupancy status of each zones
 
 double zonelight [3][4] ={ //light level and setpoint status of each zones
 	{0, -1, -1, -1}, //lux
-	{20, -1, -1, -1}, //setpoint
+	{10, -1, -1, -1}, //setpoint
 	{5, -1, -1, -1} //error band
 };
 
 ///pin mapping, always insert -1 if element not used
-int zonerelay[5]= {6,-1,-1,-1,-1}; //pin mapping for relay
-int pinpir[5] = {12,-1,-1,-1,-1}; //pin mapping for pir
+int zonerelay[5]= {10,-1,-1,-1,-1}; //pin mapping for relay
+int pinpir[5] = {2,-1,-1,-1,-1}; //pin mapping for pir
 int pinlight[5] = {A0,-1,-1,-1,-1}; //pin mapping for light level sensor
 
 //operational VARIABLE
@@ -172,7 +172,7 @@ void setup() {
   //Reserved for Startup Action
   flashLed(8, 3, 500);
   
-  MsTimer2::set(2000, activate); //Interrupt for Sending Device Stat every 1s
+  MsTimer2::set(1000, activate); //Interrupt for Sending Device Stat every 1s
   MsTimer2::start();
   
   digitalWrite(5,HIGH);
@@ -245,8 +245,8 @@ void readSensor(){
 	double lighttemp=0; //temporary value for storing lighting level value
 	while(pinpir[i]!=-1){
 		int pirvesel=digitalRead(pinpir[i]);
-		if (pirvesel==HIGH) pirval[i]=0;
-		if (pirvesel==LOW) pirval[i]=1; 
+		if (pirvesel==LOW) pirval[i]=0;
+		if (pirvesel==HIGH) pirval[i]=1; 
                 //Serial.print("Nilai sensor Pir : ");
                 //Serial.println(pirval[i]);
 		i++;
