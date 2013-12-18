@@ -1,26 +1,27 @@
 <?php
+
+    header('Access-Control-Allow-Origin: *');
+    header('Cache-Control: no-cache');
+    
     require '/Slim/Slim.php';
     use Slim\Slim;
     \Slim\Slim::registerAutoloader();
 
     $app = new Slim();
-    
+    $contenttype = $app->request->headers->get('ACCEPT');
+    $app->response->headers->set('Content-Type', $contenttype);
     //routing
-    $app->get('/hello/:name', function ($name) {
-        echo "Hello, $name";
-    });
-    
     $app->get('/area', 'getAreas');
-    $app->get('/location/:area', 'getLocations');
-    $app->get('/zone/:address', 'getZones');
+    $app->get('/location', 'getLocations');
+    $app->get('/zone', 'getZones');
     $app->get('/event', 'getEvents');
     
-    $app->post('/area/:area', 'insertArea');
-    $app->post('/command', 'insertCommand');
+    $app->post('/area', 'insertArea');
+    $app->post('/zone', 'insertCommand');
     
-    $app->put('/area/:name/:area', 'updateArea');
-    $app->put('/location/:name/:address', 'updateLocation');
-    $app->put('/zone/:name/:id', 'updateZone');
+    $app->put('/area', 'updateArea');
+    $app->put('/location', 'updateLocation');
+    $app->put('/zone', 'updateZone');
     
     $app->delete('/area/:area',   'deleteArea');
 
@@ -59,14 +60,11 @@
         }   
     }
     
-    function getLocations($area){
-        global $locationtab;
-        $sql = "SELECT * FROM devicelist WHERE area=:area";
+    function getLocations(){
+        $sql = "SELECT * FROM devicelist ORDER BY location";
         try {
             $db = dbConnect();
-            $stmt = $db->prepare($sql);
-            $stmt->bindParam("area", $area);
-            $stmt->execute();
+            $stmt = $db->query($sql);
             $locs = $stmt->fetchAll(PDO::FETCH_OBJ);
             $db = null;
             echo '{"locations": ' . json_encode($locs) . '}';
@@ -75,13 +73,11 @@
         }
     }
     
-    function getZones($address){
-        $sql = "SELECT * FROM devicestat WHERE address=:address";
+    function getZones(){
+        $sql = "SELECT * FROM devicestat ORDER BY address";
         try {
             $db = dbConnect();
-            $stmt = $db->prepare($sql);
-            $stmt->bindParam("address", $address);
-            $stmt->execute();
+            $stmt = $db->query($sql);
             $stats = $stmt->fetchAll(PDO::FETCH_OBJ);
             $db = null;
             echo '{"stats": ' . json_encode($stats) . '}';
@@ -97,19 +93,20 @@
             $stmt = $db->query($sql);
             $events = $stmt->fetchAll(PDO::FETCH_OBJ);
             $db = null;
-            echo  '{"events": ' . json_encode($events) . '}';
+            echo  'data: {"events": ' . json_encode($events) . '}';
         } catch(PDOException $e) {
             echo '{"error":{"text":'. $e->getMessage() .'}}';
         }     
     }
     //------------------Put Function-------------------------
-    function updateArea($name, $area){
+    function updateArea(){
+        $cmd = Slim::getInstance()->request();
         $sql = "UPDATE arealist SET area=:name WHERE area=:area";
         try {
             $db = dbConnect();
             $stmt = $db->prepare($sql);
-            $stmt->bindParam("name", $name);
-            $stmt->bindParam("area", $area);
+            $stmt->bindParam("name", $cmd->put('name'));
+            $stmt->bindParam("area", $cmd->put('area'));
             $stmt->execute();
             $db = null;
         } catch(PDOException $e) {
@@ -117,13 +114,14 @@
         } 
     }
     
-    function updateLocation($name,$address){
+    function updateLocation(){
+        $cmd = Slim::getInstance()->request();
         $sql = "UPDATE devicelist SET location=:location WHERE address=:address";
         try {
             $db = dbConnect();
             $stmt = $db->prepare($sql);
-            $stmt->bindParam("location", $name);
-            $stmt->bindParam("address", $address);
+            $stmt->bindParam("location", $cmd->put('location'));
+            $stmt->bindParam("address", $cmd->put('address'));
             $stmt->execute();
             $db = null;
         } catch(PDOException $e) {
@@ -131,13 +129,14 @@
         } 
     }
     
-    function updateZone($name,$id){
+    function updateZone(){
+        $cmd = Slim::getInstance()->request();
         $sql = "UPDATE devicestat SET alias=:alias WHERE id=:id";
         try {
             $db = dbConnect();
             $stmt = $db->prepare($sql);
-            $stmt->bindParam("alias", $name);
-            $stmt->bindParam("id", $id);
+            $stmt->bindParam("alias", $cmd->put('alias'));
+            $stmt->bindParam("id", $cmd->put('id'));
             $stmt->execute();
             $db = null;
         } catch(PDOException $e) {
@@ -166,12 +165,13 @@
         } 
     }
     
-    function insertArea($area){
+    function insertArea(){
+        $cmd = Slim::getInstance()->request();
         $sql = "INSERT INTO arealist (area) value (:area)";
         try {
             $db = dbConnect();
             $stmt = $db->prepare($sql);
-            $stmt->bindParam("area", $area);
+            $stmt->bindParam("area", $cmd->post('area'));
             $stmt->execute();
             $db = null;
         } catch(PDOException $e) {
