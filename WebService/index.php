@@ -54,7 +54,7 @@
             $stmt = $db->query($sql);
             $areas = $stmt->fetchAll(PDO::FETCH_OBJ);
             $db = null;
-            echo '{"areas": ' . json_encode($areas) . '}';
+            echo json_encode($areas);
         } catch(PDOException $e) {
             echo '{"error":{"text":'. $e->getMessage() .'}}';
         }   
@@ -67,7 +67,7 @@
             $stmt = $db->query($sql);
             $locs = $stmt->fetchAll(PDO::FETCH_OBJ);
             $db = null;
-            echo '{"locations": ' . json_encode($locs) . '}';
+            echo json_encode($locs);
         } catch(PDOException $e) {
             echo '{"error":{"text":'. $e->getMessage() .'}}';
         }
@@ -80,7 +80,7 @@
             $stmt = $db->query($sql);
             $stats = $stmt->fetchAll(PDO::FETCH_OBJ);
             $db = null;
-            echo '{"stats": ' . json_encode($stats) . '}';
+            echo json_encode($stats);
         } catch(PDOException $e) {
             echo '{"error":{"text":'. $e->getMessage() .'}}';
         }
@@ -93,7 +93,7 @@
             $stmt = $db->query($sql);
             $events = $stmt->fetchAll(PDO::FETCH_OBJ);
             $db = null;
-            echo  'data: {"events": ' . json_encode($events) . '}';
+            echo  json_encode($events);
         } catch(PDOException $e) {
             echo '{"error":{"text":'. $e->getMessage() .'}}';
         }     
