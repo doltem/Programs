@@ -133,6 +133,10 @@ public class XbeeSR {
         return val;
     }
     
+    public int getRawData(int index){
+        return data[index];
+    }
+    
     public int getData(int type){
         int val=0;
         switch(type){

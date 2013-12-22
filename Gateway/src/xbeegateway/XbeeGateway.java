@@ -3,6 +3,9 @@
  * and open the template in the editor.
  */
 package xbeegateway;
+import java.util.Date;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 //import java.util.Date;
 
 
@@ -30,7 +33,8 @@ public class XbeeGateway {
         tesGateway();
         //tesEvent();
     }
-        
+     
+    
     public static void tesEvent() throws Exception {
         while(true){
         String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
@@ -80,6 +84,38 @@ public class XbeeGateway {
             }
             //dbase.updateStatus(addr, zone, occ, lux, setpoint, lamp,mode);
 
+        }
+    }
+    
+    public static void relayStressTest() throws Exception {
+        XbeeSR xbeedata=new XbeeSR ("COM11", 9600); //create connection to xbee com port
+        Bitplay bitplay=new Bitplay();
+        
+        int counter=0; int fail=0; int treshold=0; int lux=0;
+        int i=0;
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        Date date = new Date();
+        
+
+        while(true){
+            xbeedata.parseResponse();
+            if(xbeedata.isDataAvail()){
+                System.out.print("Data in at : ");
+                System.out.println(dateFormat.format(date));
+                counter+=xbeedata.getRawData(0);
+                if(xbeedata.getRawData(3)>=1){
+                    System.out.println("Lamp is failed");
+                }
+                fail+=xbeedata.getRawData(3);
+                lux=bitplay.joinBit(xbeedata.getRawData(1),xbeedata.getRawData(2),16);
+
+                System.out.println("Counter : "+counter);
+                System.out.println("Lux : "+lux);
+                System.out.println("Fail attempt : "+fail);
+                System.out.println("Data ke-"+i+",");
+                System.out.println("");
+                i++;
+            }
         }
     }
 }
