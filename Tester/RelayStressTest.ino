@@ -1,8 +1,12 @@
+#include <XBee.h>
+#include <MsTimer2.h>
 
-int treshold=0;
-int timer=20000;
+
+int treshold=50;
 int light=0;
 int counter=0;
+int lampstat=0;
+int active=0;
 
 XBee xbee = XBee();
 // create reusable response objects for responses we expect to handle 
@@ -21,61 +25,47 @@ ZBTxRequest StatPacket = ZBTxRequest(GatewayAddr, payload, sizeof(payload));
 
 void setup() {
   pinMode(10,OUTPUT);
-  pinMode(11,OUTPUT);
-  pinMode(12,OUTPUT);
-  pinMode(13,OUTPUT);
   Serial.begin(9600);
   xbee.setSerial(Serial);
+  MsTimer2::set(10000, activate); //Interrupt for Sending Device Stat every 1s
+  MsTimer2::start();
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
-  //activate relay
-  digitalWrite(10,HIGH);
-  delay(timer);
-  //evaluating relay
-  if(analogRead(A0)>=treshold){
-    counter++;
-    payload[0]=counter;
-    payload[1]=getMSB(analogRead(A0),16);
-    payload[2]=getLSB(analogRead(A0),16);
-    payload[3]=0;
-
-  }
-  else{
-    payload[0]=counter;
-    payload[1]=getMSB(analogRead(A0),16);
-    payload[2]=getLSB(analogRead(A0),16);
-    payload[3]=1;
-  }
-  //Sending packet & checkstatus
-  xbee.send(StatPacket);
-  delay(500);
-  checkPacket();
-  //deactivate relay
-  digitalWrite(10,LOW);
-  delay(timer);
-}
-
-void checkPacket(){
-  if (xbee.readPacket(500)) {
-    if (xbee.getResponse().getApiId() == ZB_RX_RESPONSE) {//get RX response
-
-    } 
-    else if (xbee.getResponse().getApiId() == ZB_TX_STATUS_RESPONSE) {
-      xbee.getResponse().getZBTxStatusResponse(txStatus);
-
-      // get the delivery status, the fifth byte
-      if (txStatus.getDeliveryStatus() == SUCCESS) {
-        //reset counter
-        counter=0;
-      } else {
-      }
-    }
-    else {
-    }
+  if(active==1){
+    xbee.send(StatPacket);
+    active=0;
+    counter=0;
   }
 }
+
+void activate(){
+  if(lampstat==0){
+    digitalWrite(10,HIGH);
+    lampstat=1;
+  }
+  else if(lampstat==1){
+    if(analogRead(A0)>=treshold){
+        counter++;
+        payload[0]=counter;
+        payload[1]=getMSB(analogRead(A0),16);
+        payload[2]=getLSB(analogRead(A0),16);
+        payload[3]=0;
+    }
+    else{
+        payload[0]=counter;
+        payload[1]=getMSB(analogRead(A0),16);
+        payload[2]=getLSB(analogRead(A0),16);
+        payload[3]=1;
+    }
+
+    digitalWrite(10,LOW);
+    active=1;
+    lampstat=0;
+  }
+}
+
 
 unsigned int getMSB(unsigned int value, int bitlength){
   bitlength=bitlength/2;
@@ -90,6 +80,28 @@ unsigned int getLSB(unsigned int value, int bitlength){
   unsigned int mask=getMask(bitlength);
         unsigned int lsb= value & mask;
   return lsb;
+}
+
+unsigned int getMask(int length){
+  int num=0;
+        int powval=0;
+  for(int i=0;i<length;i++){
+            powval=pangkat(2,i);
+            num=num+powval;
+  }
+  return num;
+}
+
+int pangkat(int val, int expo){
+  int hasil=val;
+  if(expo<1){ hasil=1;}
+  else if(expo<2){hasil=val;}
+  else{
+    for(int i=1;i<expo;i++){
+      hasil=hasil*val;
+    }
+  }
+  return hasil;
 }
 
 

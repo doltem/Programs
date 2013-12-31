@@ -92,11 +92,11 @@ public class XbeeSR {
                 remoteAddr=ByteUtils.toBase16(rx.getRemoteAddress64().getAddress());
                 intAddr=rx.getRemoteAddress64().getAddress();
                 data=rx.getData();
-                for(int i=0;i<data.length;i++){
+                /*for(int i=0;i<data.length;i++){
                     System.out.print(data[i]);
                     System.out.print(" ");
                 }
-                System.out.println();
+                System.out.println();*/
                 avail=true;
             }
         }

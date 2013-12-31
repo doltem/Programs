@@ -30,7 +30,7 @@ public class XbeeGateway {
     private static final short EBAND = 0X07;
     
     public static void main(String[] args) throws Exception {
-        tesGateway();
+        relayStressTest();
         //tesEvent();
     }
      
@@ -94,27 +94,42 @@ public class XbeeGateway {
         int counter=0; int fail=0; int treshold=0; int lux=0;
         int i=0;
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        Date date = new Date();
+        Date date = null;
         
 
         while(true){
             xbeedata.parseResponse();
             if(xbeedata.isDataAvail()){
+                date=new Date();
                 System.out.print("Data in at : ");
                 System.out.println(dateFormat.format(date));
-                counter+=xbeedata.getRawData(0);
-                if(xbeedata.getRawData(3)>=1){
-                    System.out.println("Lamp is failed");
-                }
-                fail+=xbeedata.getRawData(3);
-                lux=bitplay.joinBit(xbeedata.getRawData(1),xbeedata.getRawData(2),16);
+                if(xbeedata.getRawData(0)==2){
+                    lux=bitplay.joinBit(xbeedata.getRawData(1),xbeedata.getRawData(2),16);
 
-                System.out.println("Counter : "+counter);
-                System.out.println("Lux : "+lux);
-                System.out.println("Fail attempt : "+fail);
-                System.out.println("Data ke-"+i+",");
-                System.out.println("");
-                i++;
+                    System.out.println("Device is Active");
+                    System.out.println("Lux : "+lux);
+                    System.out.println("");
+                }
+                else if(xbeedata.getRawData(0)==3){
+                    System.out.println("Device is Up & Running");
+                    System.out.println("");
+                }
+                else{
+                    counter+=xbeedata.getRawData(0);
+               
+                    if(xbeedata.getRawData(3)>=1){
+                        System.out.println("Lamp is failed");
+                    }
+                    fail+=xbeedata.getRawData(3);
+                    lux=bitplay.joinBit(xbeedata.getRawData(1),xbeedata.getRawData(2),16);
+
+                    System.out.println("Counter : "+counter);
+                    System.out.println("Lux : "+lux);
+                    System.out.println("Fail attempt : "+fail);
+                    System.out.println("Data ke-"+i+",");
+                    System.out.println("");
+                    i++;
+                }
             }
         }
     }
