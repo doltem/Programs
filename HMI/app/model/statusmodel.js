@@ -1,7 +1,5 @@
 //Model for Status List
-$(function(){
-
-  var statusModel = kendo.observable({
+statusModel = kendo.observable({
     id: "",
     serviceurl: "http://localhost:80/service/zone",
 
@@ -39,8 +37,11 @@ $(function(){
         lamp : data.lamp
       });
     }
-  });
+});
 
   //Controller Binder
   statusModel.bind("status:save", SendCommand);
-});
+
+  function SendCommand(){
+
+  }

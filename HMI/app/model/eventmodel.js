@@ -1,7 +1,5 @@
 //Model for Event List
-$(function(){
-
-  var eventModel = kendo.observable({
+eventModel = kendo.observable({
     area: "Bangunan",
     serviceurl: "http://localhost:80/service/event",
 
@@ -18,5 +16,4 @@ $(function(){
       }
 
     }),
-  });
 });

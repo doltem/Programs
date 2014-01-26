@@ -1,7 +1,5 @@
 //Model for Area Dropdown List
-$(function(){
-
-  var areaModel = kendo.observable({
+areaModel = kendo.observable({
     area: "Bangunan",
     serviceurl: "http://localhost:80/service/area",
 
@@ -30,10 +28,8 @@ $(function(){
     }),
 
     onSelect: function(e){
-      var index = e.sender.select().index();
-      var data = this.dataSource.view()[index];
-      
-      this.trigger("area:selected", data);
+      var dataItem = this.dataItem(e.item.index());
+      this.trigger("zone:selected", dataItem.value);
     },
 
     onEdit: function(data){
@@ -49,4 +45,13 @@ $(function(){
   //Controller Binder
   areaModel.bind("area:selected", AreaChange);
   areaModel.bind("area:edit", EditName);
-});
+
+  //function list
+  function AreaChange(area){
+    viewController.setFilter("device",area);
+    layout.showIn("#content", view.deviceView);
+  }
+
+  function EditName(){
+
+  }

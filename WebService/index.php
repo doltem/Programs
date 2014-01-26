@@ -149,16 +149,29 @@
     //$zone, $address, $mode, $setpoint, $errorband, $lamp
         $cmd = Slim::getInstance()->request();
         $sql = "INSERT INTO command (id, zone, address, mode, setpoint, errorband, lamp) VALUES (default, :zone, :address, :mode, :setpoint, :errorband, :lamp)";
+        $sql2 = "UPDATE devicestat SET mode=:mode, setpoint=:setpoint, errorband=:errorband, lamp=:lamp WHERE address=:address AND zone=:zone";
         try {
             $db = dbConnect();
             $stmt = $db->prepare($sql);
+            $stmt2 = $db->prepare($sql2);
+            
             $stmt->bindParam("zone", $cmd->post('zone'));
             $stmt->bindParam("address", $cmd->post('address'));
             $stmt->bindParam("mode", $cmd->post('mode'));
             $stmt->bindParam("setpoint", $cmd->post('setpoint'));
             $stmt->bindParam("errorband", $cmd->post('errorband'));
             $stmt->bindParam("lamp", $cmd->post('lamp'));
+            
+            $stmt2->bindParam("zone", $cmd->post('zone'));
+            $stmt2->bindParam("address", $cmd->post('address'));
+            $stmt2->bindParam("mode", $cmd->post('mode'));
+            $stmt2->bindParam("setpoint", $cmd->post('setpoint'));
+            $stmt2->bindParam("errorband", $cmd->post('errorband'));
+            $stmt2->bindParam("lamp", $cmd->post('lamp'));
+            
+            
             $stmt->execute();
+            $stmt2->execute();
             $db = null;
         } catch(PDOException $e) {
             echo '{"error":{"text":'. $e->getMessage() .'}}';

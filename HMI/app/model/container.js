@@ -1,7 +1,6 @@
 //Model for Containers
-$(function(){
 
-  var nameContainer = kendo.observable({
+  nameContainer = kendo.observable({
     name: "",
     type: "",
     newname:"",
@@ -18,7 +17,7 @@ $(function(){
     }
   });
 
-  var groupContainer = kendo.observable({
+  groupContainer = kendo.observable({
     device: "",
     area: "",
 
@@ -33,7 +32,5 @@ $(function(){
     }
   });
 
-  nameContainer.bind("name:save", SaveName);
-  groupContainer.bind("group:save", SaveGroup);
-
-});
+  //nameContainer.bind("name:save", SaveName);
+  //groupContainer.bind("group:save", SaveGroup);

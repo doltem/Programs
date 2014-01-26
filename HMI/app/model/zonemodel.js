@@ -1,7 +1,5 @@
 //Model for Zone Dropdown List
-$(function(){
-
-  var zoneModel = kendo.observable({
+zoneModel = kendo.observable({
     address: "",
     serviceurl: "http://localhost:80/service/zone",
 
@@ -27,10 +25,8 @@ $(function(){
     }),
 
     onSelect: function(e){
-      var index = e.sender.select().index();
-      var data = this.dataSource.view()[index];
-      
-      this.trigger("zone:selected", data);
+      var dataItem = this.dataItem(e.item.index());
+      this.trigger("zone:selected", dataItem.value);
     },
 
     onEdit: function(data){
@@ -46,4 +42,15 @@ $(function(){
   //Controller Binder
   zoneModel.bind("zone:selected", ZoneChange);
   zoneModel.bind("zone:edit", EditName);
-});
+
+  //function list
+  function ZoneChange(zone){
+    viewController.setFilter("status",zone.id);
+    layout.showIn("#content", statusView);
+  }
+
+  function EditName(zone){
+    
+  }
+
+ 

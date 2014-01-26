@@ -1,7 +1,5 @@
 //Model for Device List
-$(function(){
-
-  var deviceModel = kendo.observable({
+deviceModel = kendo.observable({
     area: "Bangunan",
     serviceurl: "http://localhost:80/service/location",
 
@@ -41,9 +39,17 @@ $(function(){
         type : "device"
       });
     }
-  });
+});
 
   //Controller Binder
   deviceModel.bind("device:clicked", DeviceSelect);
-  deviceModel.bind("device:edit", EditName);
-});
+  //deviceModel.bind("device:edit", EditName);
+
+  //function list
+  function deviceSelect(data){
+    viewController.setFilter("zone",data.address);
+    var zonedata=viewController.getData("zone",0);
+    viewController.setFilter("status",zonedata.id);
+    layout.showIn("#dropdown", zoneView);
+    layout.showIn("#content", statusView);
+  }

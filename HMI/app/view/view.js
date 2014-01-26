@@ -1,39 +1,32 @@
 //list of layout and views in apps
-$(function(){
+	areaView = new kendo.View("area-template", {
+		model: areaModel
+	});
 
-var areaView = new kendo.View("area-template", {
-	model: areaModel
-});
+	zoneView= new kendo.View("zone-template", {
+		model: zoneModel
+	});
 
-var zoneView= new kendo.View("zone-template", {
-	model: zoneModel
-});
+	deviceView = new kendo.View("device-template", {
+		model: deviceModel
+	});
 
-var deviceView = new kendo.View("device-template", {
-	model: deviceModel
-});
+	statusView = new kendo.View("status-template", {
+		model: statusModel
+	});
 
-var statusView = new kendo.View("status-template", {
-	model: statusModel
-});
+	eventView = new kendo.View("event-template", {
+		model: eventModel
+	});
 
-var eventView = new kendo.View("event-template", {
-	model: eventModel
-});
+	editView = new kendo.View("edit-template", {
+		model: nameContainer
+	});
 
-var editView = new kendo.View("edit-template", {
-	model: nameContainer
-});
+	groupView = new kendo.View("group-template", {
+		model: groupContainer
+	});
 
-var groupView = new kendo.View("group-template", {
-	model: groupContainer
-});
+	layout = new kendo.Layout("layout-template", {
 
-var layout = new kendo.Layout("layout-template", {
-
-});
-
-var html = layout.render();
-$("body").html(html);
-
-});
+	});
