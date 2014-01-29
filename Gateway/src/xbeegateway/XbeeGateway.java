@@ -3,6 +3,8 @@
  * and open the template in the editor.
  */
 package xbeegateway;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.Date;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -30,8 +32,9 @@ public class XbeeGateway {
     private static final short EBAND = 0X07;
     
     public static void main(String[] args) throws Exception {
-        relayStressTest();
+        //relayStressTest();
         //tesEvent();
+        tesDelay();
     }
      
     
@@ -133,4 +136,16 @@ public class XbeeGateway {
             }
         }
     }
+
+    public static void tesDelay() throws Exception {
+        String address="tes";
+        int[] payload=null;
+        int timeoutdelay=0;
+        //PrintStream out = new PrintStream(new FileOutputStream("hasiltes.txt"));
+        //System.setOut(out);
+        XbeeSR xbeedata=new XbeeSR ("COM11", 9600);
+        xbeedata.delayTest(address,payload,timeoutdelay);
+    }
+    
+    
 }

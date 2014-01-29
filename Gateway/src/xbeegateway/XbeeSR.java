@@ -210,5 +210,40 @@ public class XbeeSR {
      }
     
     
+    public void delayTest(String address, int[] payload, int timeoutdelay) throws XBeeException{
+        XBeeAddress64 addr64=new XBeeAddress64(address);
+        long start = 0;
+        long end =0;
+        long delay=0;
+
+        ZNetTxRequest request=new ZNetTxRequest(addr64, payload);
+        while(true){
+            try {
+                tx = (ZNetTxStatusResponse) xbee.sendSynchronous(request, timeoutdelay);
+                start=System.currentTimeMillis();
+                // update frame id for next request
+                request.setFrameId(xbee.getNextFrameId());
+                if (tx.getDeliveryStatus() == ZNetTxStatusResponse.DeliveryStatus.SUCCESS) {
+                   System.out.println("Packet delivery success");
+                   break;
+                } else {
+                   System.out.println("Packet delivery failed");
+                }
+            }
+            catch (XBeeTimeoutException e) {
+                    System.out.println(e);
+            }
+        }
+        while(true){
+            response = xbee.getResponse();
+            if (response.getApiId() == ApiId.ZNET_RX_RESPONSE){
+                end=System.currentTimeMillis();
+                delay=end-start;
+                System.out.println(delay);
+                break;
+            }
+        }
+     }
+    
 
 }
