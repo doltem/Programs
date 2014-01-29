@@ -1,15 +1,16 @@
 #include <XBee.h>
 
 XBee xbee = XBee();
-//payload
-uint8_t payload[] = { 0, 0 }
 //Response Objects
 XBeeResponse response = XBeeResponse(); 
 ZBRxResponse rx = ZBRxResponse();
 ModemStatusResponse msr = ModemStatusResponse();
 //Request Objects
-XBeeAddress64 addr64 = XBeeAddress64(0x0013a200, 0x403e0f30);
-ZBTxRequest StatPacket = ZBTxRequest(addr64, payload, sizeof(payload));
+XBeeAddress64 GatewayAddr = XBeeAddress64(0x0013A200, 0x4092D859);
+//packet payload
+uint8_t StatPayload[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00,0x00, 0x00, 0x00};
+//Transmit Packets
+ZBTxRequest StatPacket = ZBTxRequest(GatewayAddr, StatPayload, sizeof(StatPayload));
 
 
 void setup() {
