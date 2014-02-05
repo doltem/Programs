@@ -11,6 +11,10 @@
 #include <XBee.h>
 #include <math.h>
 
+//////////CRC VARIABLE//////
+uint16_t crcTable[256];
+uint16_t poly=0x8005; //polynom based on CRC-16 Standard
+
 //Endpoint Identifier
 #define EndOnoffL 0x12
 #define EndGateway 0x80
@@ -144,10 +148,14 @@ ZBTxStatusResponse txStatus = ZBTxStatusResponse();
 XBeeAddress64 GatewayAddr = XBeeAddress64(0x0013A200, 0x4092D859);
 //packet payload
 uint8_t StatPayload[] = {endpoint, EndGateway, MCustomCluster, LCustomCluster, FCServer2Client, Trans, CReportAttribute, 0x00,LOnOffId, DT8Bitmap, Lamp, 0x00, LOccId, DT8Bitmap, OccValue, 0x00, LLightId, DT16Uint, LightValueMSB, LightValueLSB, 0x00, LLightSetId, DT16Uint, LightSetMSB, LightSetLSB, 0x00, LLightBandId, DT16Uint, LightBandMSB, LightBandLSB,0x00,LMode, DT8Bitmap, mode};
+uint8_t finalPayload[36];
 //Transmit Packets
-ZBTxRequest StatPacket = ZBTxRequest(GatewayAddr, StatPayload, sizeof(StatPayload));
+ZBTxRequest StatPacket = ZBTxRequest(GatewayAddr, finalPayload, sizeof(finalPayload));
 
 void setup() {
+	//init CRC table
+	crcTableInit();
+
   //digital pin Mode Setting
   pinMode(setLed, OUTPUT);
   pinMode(statusLed, OUTPUT);
@@ -179,7 +187,7 @@ void setup() {
   //Reserved for Startup Action
   flashLed(8, 3, 500);
   
-  MsTimer2::set(5000, activate); //Interrupt for Sending Device Stat every 1s
+  MsTimer2::set(3000, activate); //Interrupt for Sending Device Stat every 1s
   MsTimer2::start();
   
   digitalWrite(5,HIGH);
@@ -253,6 +261,19 @@ void sendStatus(){
 		convertLight(zonelight[1][j], LUXSET); //assign light level set point value to packet
 		convertLight(zonelight[2][j], LUXBAND); //assign light level error band to packet
 		convertLight(zonelight[0][j], LUXLEVEL); //assign light level value to packet
+		
+		//get CRC
+		uint16_t crc = getCRC(StatPayload,34);
+
+		//append to new array
+		for(int i=0;i<34;++i){
+			finalPayload[i]=StatPayload[i];
+		}
+
+		finalPayload[34]=getMSB(crc,16);
+    	finalPayload[35]=getLSB(crc,16);
+
+		//sending packet
 		xbee.send(StatPacket);
 		aktif=0;
                 //Serial.print("nilai j : ");
@@ -267,8 +288,8 @@ void readSensor(){
 	 //temporary value for storing lighting level value
 	while(pinpir[i]!=-1){
 		int pirvesel=digitalRead(pinpir[i]);
-		if (pirvesel==HIGH) pirval[i]=1;
-		if (pirvesel==LOW) pirval[i]=0; 
+		if (pirvesel==HIGH) pirval[i]=0;
+		if (pirvesel==LOW) pirval[i]=1; 
                 //Serial.print("Nilai sensor Pir : ");
                 //Serial.println(pirval[i]);
 		i++;
@@ -489,4 +510,36 @@ void flashLed(int pin, int times, int wait) {
         delay(wait);
       }
     }
+}
+
+//CRC function
+void crcTableInit(){
+	uint16_t remain; //remainder variable
+	for(int div = 0; div <256 ; ++div){ //divident index
+		remain = div << 8;
+		
+		for(uint16_t bit = 0; bit<8; ++bit){
+			uint16_t topbit = remain & (1<<15);
+			remain <<= 1;
+			if (topbit)
+            {
+                remain ^= poly;
+            }
+		}
+		
+		crcTable[div] = remain;
+	}
+}
+
+uint16_t getCRC(uint8_t *payload, int length){
+	uint8_t data;
+	uint16_t remain = 0; //remainder initial value
+	
+	for(int byte=0; byte<length ;++byte){
+		data = *payload++ ^ (remain >> 8);
+		remain = crcTable[data] ^ (remain<<8);
+		
+	}
+	
+	return remain;
 }

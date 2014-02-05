@@ -3,7 +3,10 @@
  * and open the template in the editor.
  */
 package xbeegateway;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.PrintStream;
 import java.util.Date;
 import java.text.DateFormat;
@@ -35,6 +38,8 @@ public class XbeeGateway {
         //relayStressTest();
         //tesEvent();
         tesDelay();
+        //tesGateway();
+        //tesCRC();
     }
      
     
@@ -54,6 +59,7 @@ public class XbeeGateway {
         
         String addr="a"; int occ=0; double lux=0; double setpoint=0; double eband=0; int lamp=0; int mode=0; int zone=0;
         int i=0;
+        int[] payload;
 
         while(true){
             xbeedata.parseResponse();
@@ -67,7 +73,11 @@ public class XbeeGateway {
                 setpoint=xbeedata.getLight(SPOINT);
                 eband=xbeedata.getLight(EBAND);
                 mode=xbeedata.getData(MODE);
-                
+                System.out.print("Payload : ");
+                payload=xbeedata.getFullData();
+                for(int c=0;c<payload.length;++c){
+                    System.out.print(Integer.toHexString(payload[c])+" ");
+                }
                 System.out.println("Alamat Pengirim : "+addr);
                 System.out.println("Zona Operasi : "+zone);
                 System.out.println("1.Status Lampu : "+lamp);
@@ -138,14 +148,40 @@ public class XbeeGateway {
     }
 
     public static void tesDelay() throws Exception {
-        String address="00 13 A2 00 40 8B 5E 9F";
-        int[] payload={0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00,0x00, 0x00, 0x00};
-        int timeoutdelay=1000;
-        //PrintStream out = new PrintStream(new FileOutputStream("hasiltes.txt"));
-        //System.setOut(out);
-        XbeeSR xbeedata=new XbeeSR ("COM11", 9600);
-        xbeedata.delayTest(address,payload,timeoutdelay);
+        XbeeSR xbeedata=new XbeeSR ("COM11", 9600); 
+        xbeedata.delayTest(1000);
     }
     
-    
+    public static void tesCRC() throws Exception{
+        CRC crc = new CRC();
+        XbeeSR xbeedata=new XbeeSR ("COM11", 9600); //create connection to xbee com port
+        int i=0;
+        int[] payload;
+        int success=0;
+        int fail=0;
+
+        while(true){
+            xbeedata.parseResponse();
+            if(xbeedata.isDataAvail()){
+                System.out.print("Payload : ");
+                payload=xbeedata.getFullData();
+                for(int c=0;c<payload.length;++c){
+                    System.out.print(Integer.toHexString(payload[c])+" ");
+                }
+                
+                int crcvalue=crc.getCRC(payload, payload.length);
+                if(crcvalue==0){
+                    ++success;
+                }
+                else{
+                    ++fail;
+                }
+            }
+            System.out.println();
+            System.out.println("Good Data : "+success);
+            System.out.println("Bad Data : "+fail);
+            System.out.println();
+
+        }
+    }
 }

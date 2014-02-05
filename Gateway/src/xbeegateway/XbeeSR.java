@@ -21,6 +21,10 @@ import com.rapplogic.xbee.api.zigbee.ZNetTxRequest;
 import com.rapplogic.xbee.api.zigbee.ZNetTxStatusResponse;
 import com.rapplogic.xbee.util.ByteUtils;
 import com.rapplogic.xbee.api.XBeeException;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.math.*;
 import java.sql.*;
 /**
@@ -59,8 +63,9 @@ public class XbeeSR {
     //data structure for sending to remote xbee
     QContainer[] qdata=null;
     
-    //variable
+    BufferedWriter bw;
     
+    //variable
     String gatePort;
     int baudRate;
     boolean avail=false;
@@ -109,7 +114,7 @@ public class XbeeSR {
             }
         }
     }
-
+    
     
     public double getLight(int type){ //method for getting16bit data from parsed packet
         double val=0;
@@ -131,6 +136,10 @@ public class XbeeSR {
             }break;
         }
         return val;
+    }
+    
+    public int[] getFullData(){
+        return data;
     }
     
     public int getRawData(int index){
@@ -210,39 +219,59 @@ public class XbeeSR {
      }
     
     
-    public void delayTest(String address, int[] payload, int timeoutdelay) throws XBeeException{
-        XBeeAddress64 addr64=new XBeeAddress64(address);
+    public void delayTest( int timeoutdelay) throws XBeeException, IOException{
+	XBeeAddress64 addr64=new XBeeAddress64("00 13 a2 00 40 8b 5e 9f");
+        int[] payload={0x80,0x01,0x10,0x00,0x48,0x00,0x02,0x00,0x04,0x18,0x00,0x00,0x01,0x18,0x01,0x00,0x03,0x21,0x00,0x00,0x00,0x03,0x21,0x1b,0x4c};
+	long delay=0;
         long start = 0;
         long end =0;
-        long delay=0;
-
+        boolean notdelivered=true;
+        
+        short counter=0;
+        
         ZNetTxRequest request=new ZNetTxRequest(addr64, payload);
-        while(true){
-            try {
-                tx = (ZNetTxStatusResponse) xbee.sendSynchronous(request, timeoutdelay);
-                start=System.currentTimeMillis();
-                // update frame id for next request
-                request.setFrameId(xbee.getNextFrameId());
-                if (tx.getDeliveryStatus() == ZNetTxStatusResponse.DeliveryStatus.SUCCESS) {
-                   System.out.println("Packet delivery success");
-                   break;
-                } else {
-                   System.out.println("Packet delivery failed");
+        int index=0;
+        while(index<=200){
+            //while(true){
+            if(notdelivered){
+                try {
+                    tx = (ZNetTxStatusResponse) xbee.sendSynchronous(request, timeoutdelay);
+                    start=System.currentTimeMillis();
+                    //System.out.println("Start : "+start);
+                    // update frame id for next request
+                    request.setFrameId(xbee.getNextFrameId());
+                    if (tx.getDeliveryStatus() == ZNetTxStatusResponse.DeliveryStatus.SUCCESS) {
+                       //System.out.println("Packet delivery success");
+                       //break;
+                        notdelivered=false;
+                    } else {
+                       System.out.println("Packet delivery failed");
+                    }
+                }
+                catch (XBeeTimeoutException e) {
+                        System.out.println(e);
                 }
             }
-            catch (XBeeTimeoutException e) {
-                    System.out.println(e);
-            }
-        }
-        while(true){
-            response = xbee.getResponse();
-            if (response.getApiId() == ApiId.ZNET_RX_RESPONSE){
+            //}
+            this.parseResponse();
+            if (this.isDataAvail()){
+                //get delay
                 end=System.currentTimeMillis();
                 delay=end-start;
+                //get data
+                /*for(int i=0;i<this.data.length;i++){
+                    System.out.print(Integer.toHexString(data[i]));
+                    System.out.print(" ");
+                }*/
+                //System.out.println();
                 System.out.println(delay);
-                break;
+                ++index;
+                notdelivered=true;
+
+                //break because data received
             }
         }
+        System.out.println("completed");
      }
     
 

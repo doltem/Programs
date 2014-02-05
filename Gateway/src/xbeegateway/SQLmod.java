@@ -26,12 +26,13 @@ public class SQLmod {
     private static final int LMode = 0x04;
     private static final int LLamp = 0x01;
     private static final int LSetPoint = 0x03;
+    Connection con;
     
     String DB_URL;
     String USER;
     String PASS;
     String tableStat="device_stat_";
-    String adrtable="deviceloc";
+    String adrtable="devicelist";
     String statustable="devicestat";
     String eventtable="event";
     String commandtable="command";
@@ -40,6 +41,7 @@ public class SQLmod {
         this.DB_URL=DB_URL;
         this.USER=USER;
         this.PASS=PASS;
+        con = DriverManager.getConnection(DB_URL, USER, PASS);
     }
     
     public void event(String address, int zone, int occ) throws SQLException{
@@ -129,7 +131,7 @@ public class SQLmod {
     
     public boolean checkCommand() throws SQLException{ // update Status table with data format [address, occ, light, lamp]
         boolean val=false;
-        try (Connection con = DriverManager.getConnection(DB_URL, USER, PASS);Statement allfind=con.createStatement()) {
+        try (Statement allfind=con.createStatement()) {
             ResultSet allset = allfind.executeQuery("SELECT zone, address, id FROM "+commandtable+" ");
             if(allset.next()){
                 val=true;
@@ -150,7 +152,7 @@ public class SQLmod {
         Bitplay olah=new Bitplay();
         String address=null;
         
-        try (Connection con = DriverManager.getConnection(DB_URL, USER, PASS);Statement cmdquery=con.createStatement(); Statement delrecord=con.createStatement()) {
+        try (Statement cmdquery=con.createStatement(); Statement delrecord=con.createStatement()) {
             ResultSet query = cmdquery.executeQuery("SELECT id , zone, address, mode, setpoint, errorband, lamp FROM "+commandtable+" ");
             if(query.next()){
                 address=query.getString("address");
