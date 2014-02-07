@@ -149,7 +149,7 @@ public class XbeeGateway {
 
     public static void tesDelay() throws Exception {
         XbeeSR xbeedata=new XbeeSR ("COM11", 9600); 
-        xbeedata.delayTest(1000);
+        xbeedata.delayTest(5000);
     }
     
     public static void tesCRC() throws Exception{
@@ -184,4 +184,6 @@ public class XbeeGateway {
 
         }
     }
+    
+    
 }
