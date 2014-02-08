@@ -35,20 +35,26 @@ public class XbeeGateway {
     private static final short EBAND = 0X07;
     
     public static void main(String[] args) throws Exception {
+        tesSchedule();
         //relayStressTest();
         //tesEvent();
-        tesDelay();
+        //tesDelay();
         //tesGateway();
         //tesCRC();
     }
      
-    
     public static void tesEvent() throws Exception {
         while(true){
         String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
         SQLmod dbase=new SQLmod(dburl,dbuser,dbpass);
         dbase.event("00 13 a2 00 40 8b 5e 9f",1,0);
         }
+    }
+    
+    public static void tesSchedule() throws Exception {
+        String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
+        SQLmod dbase=new SQLmod(dburl,dbuser,dbpass);
+        dbase.getSchedule();
     }
     
     public static void tesGateway() throws Exception {

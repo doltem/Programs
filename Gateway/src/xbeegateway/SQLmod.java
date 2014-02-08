@@ -13,6 +13,7 @@ package xbeegateway;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Calendar;
 
 public class SQLmod {
     private static final int EndGateway = 0x80;
@@ -36,6 +37,7 @@ public class SQLmod {
     String statustable="devicestat";
     String eventtable="event";
     String commandtable="command";
+    String schedtable="schedule";
     
     public SQLmod(String DB_URL, String USER, String PASS) throws SQLException{ //class constructor for setting url, user, password
         this.DB_URL=DB_URL;
@@ -153,7 +155,7 @@ public class SQLmod {
         String address=null;
         
         try (Statement cmdquery=con.createStatement(); Statement delrecord=con.createStatement()) {
-            ResultSet query = cmdquery.executeQuery("SELECT id , zone, address, mode, setpoint, errorband, lamp FROM "+commandtable+" ");
+            ResultSet query = cmdquery.executeQuery("SELECT id , zone, address, mode, setpoint, errorband, lamp FROM "+commandtable+" WHERE address = '"+address+"'");
             if(query.next()){
                 address=query.getString("address");
                 packet.add(EndGateway);
@@ -175,6 +177,121 @@ public class SQLmod {
         }
         QContainer box=new QContainer(address,vessel);
         return box;
+    }
+    
+    public void getSchedule() throws SQLException{ // update Status table with data format [address, occ, light, lamp]
+        String cmd=null;
+        //get current date&time
+        Calendar calendar = Calendar.getInstance();
+        int day = calendar.get(Calendar.DAY_OF_WEEK); //sunday is 1
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
+        //schedule variable
+        int dstart=0;
+        int dend=0;
+        java.sql.Time tstart=null;
+        java.sql.Time tend=null;
+        //operator type
+        boolean opand;
+        boolean scheck;
+        
+        int index=0;
+        try (Statement qinactive=con.createStatement(); Statement qactive=con.createStatement(); Statement getstatus=con.createStatement();Statement inscmd=con.createStatement()) {
+            //search for inactive schedule
+            ResultSet rsinactive = qinactive.executeQuery("SELECT id,dstart , dend, tstart, tend, address, zone, lamp, mode, active FROM "+schedtable+" WHERE active = 0");
+            while(rsinactive.next()){
+                dstart=rsinactive.getInt("dstart");
+                dend=rsinactive.getInt("dend");
+                tstart=rsinactive.getTime("tstart");
+                tend=rsinactive.getTime("tend");
+                //check the schedule must be activated or not
+                if( checkSchedule(day, hour,minute,dstart,dend,tstart,tend)){
+                    System.out.println("inactive schedule found");
+                    int id=rsinactive.getInt("id");
+                    String address=rsinactive.getString("address");
+                    int zone=rsinactive.getInt("zone");
+                    ResultSet status = getstatus.executeQuery("SELECT setpoint , errorband FROM "+statustable+" WHERE address = '"+address+"' AND zone = "+zone+"");
+                    if(status.next()){
+                        cmd = "INSERT INTO "+commandtable+
+                                    " VALUES (default,"+zone+",'"+address+"',"+rsinactive.getInt("mode")+","+status.getFloat("setpoint")+","+status.getFloat("errorband")+","+rsinactive.getInt("lamp")+")";
+                        inscmd.executeUpdate(cmd);
+                        cmd = "UPDATE "+schedtable+" SET active = 1  WHERE id = "+id+" ";
+                        inscmd.executeUpdate(cmd);
+                        
+                    }                    
+                }            
+            }
+            //search for active schedule
+            ResultSet rsactive = qactive.executeQuery("SELECT id,dstart , dend, tstart, tend, address, zone, lamp, mode, active FROM "+schedtable+" WHERE active = 1");
+            while(rsactive.next()){
+                dstart=rsactive.getInt("dstart");
+                dend=rsactive.getInt("dend");
+                tstart=rsactive.getTime("tstart");
+                tend=rsactive.getTime("tend");
+                //check the schedule must be activated or not
+                if(!checkSchedule(day, hour,minute,dstart,dend,tstart,tend)){
+                    int id=rsactive.getInt("id");
+                    String address=rsactive.getString("address");
+                    int zone=rsactive.getInt("zone");
+                    ResultSet status = getstatus.executeQuery("SELECT setpoint , errorband FROM "+statustable+" WHERE address = '"+address+"' AND zone = "+zone+"");
+                    if(status.next()){
+                        cmd = "INSERT INTO "+commandtable+
+                                    " VALUES (default,"+zone+",'"+address+"',1,"+status.getFloat("setpoint")+","+status.getFloat("errorband")+","+rsactive.getInt("lamp")+")";
+                        inscmd.executeUpdate(cmd);
+                        cmd = "UPDATE "+schedtable+" SET active = 0  WHERE id = "+id+" ";
+                        inscmd.executeUpdate(cmd);
+                        
+                    }                    
+                }
+            }
+        }
+        catch(SQLException e){
+            System.out.println(e.getMessage());
+        }
+    }
+    
+    public boolean checkSchedule(int day, int hour, int minute, int dstart, int dend,java.sql.Time tstart,java.sql.Time tend){
+        boolean scheck;
+        //check schedule day
+        if (dstart <= dend) {  
+            scheck = (day >= dstart && day <= dend);
+        } else {
+            scheck = (day >= dstart || day <= dend);
+        }
+        //check the hour && minute
+        //System.out.println(tstart.getHours());
+        //System.out.println(tend.getHours());
+        if (tstart.getHours() < tend.getHours()) {
+            if (hour == tstart.getHours()) {
+                scheck = scheck && (minute > tstart.getMinutes());
+            } else if (hour == tend.getHours()) {
+                scheck = scheck && (minute < tend.getMinutes());
+            } else {
+                scheck = scheck && (hour > tstart.getHours() && hour < tend.getHours());
+            }
+        } else if (tstart.getHours() > tend.getHours()) {
+            if (hour == tstart.getHours()) {
+                scheck = scheck && (minute > tstart.getMinutes());
+            } else if (hour == tend.getHours()) {
+                scheck = scheck && (minute < tend.getMinutes());
+            } else {
+                System.out.println("tes");
+                scheck = scheck && (hour > tstart.getHours() || hour < tend.getHours());
+            }
+        } else { //if the start hour and end hour same
+            if (hour == tstart.getHours()) {
+                if (tstart.getMinutes() < tend.getMinutes()) {
+                    scheck = scheck && (minute >= tstart.getMinutes() && minute <= tend.getMinutes());
+                } else if (tstart.getMinutes() > tend.getMinutes()) {
+
+                    scheck = scheck && (minute >= tstart.getMinutes() || minute <= tend.getMinutes());
+                }
+            } else {
+                scheck = scheck && false;
+            }
+        }
+  
+        return scheck;
     }
 }
 
