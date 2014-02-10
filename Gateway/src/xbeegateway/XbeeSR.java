@@ -94,6 +94,7 @@ public class XbeeSR {
     public void parseResponse() throws XBeeException, ClassCastException{ //method for parsing incoming Xbee data
         try{
             response = xbee.getResponse();
+            System.out.println("response");
             if (response.getApiId() == ApiId.ZNET_RX_RESPONSE){
                 rx = (ZNetRxResponse) response;
                 remoteAddr=ByteUtils.toBase16(rx.getRemoteAddress64().getAddress());
@@ -198,6 +199,7 @@ public class XbeeSR {
     }
     
     public void sendPacket(QContainer box) throws XBeeException{
+        System.out.println(box.getAddress());
         XBeeAddress64 addr64=new XBeeAddress64(box.getAddress());
         int[] payload=box.getPacket();
             System.out.println(box.getAddress());

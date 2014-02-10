@@ -35,11 +35,11 @@ public class XbeeGateway {
     private static final short EBAND = 0X07;
     
     public static void main(String[] args) throws Exception {
-        tesSchedule();
+        //tesSchedule();
         //relayStressTest();
         //tesEvent();
         //tesDelay();
-        //tesGateway();
+        tesGateway();
         //tesCRC();
     }
      
@@ -68,6 +68,7 @@ public class XbeeGateway {
         int[] payload;
 
         while(true){
+            System.out.println("loop");
             xbeedata.parseResponse();
             if(xbeedata.isDataAvail()){
                 System.out.println("Data masuk");

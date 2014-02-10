@@ -10,20 +10,23 @@
     $app = new Slim();
     $contenttype = $app->request->headers->get('ACCEPT');
     $app->response->headers->set('Content-Type', $contenttype);
-    //routing
-    $app->get('/area', 'getAreas');
-    $app->get('/location', 'getLocations');
-    $app->get('/zone', 'getZones');
-    $app->get('/event', 'getEvents');
+    //-------------------------routing-----------------------------
+    $app->get('/area', 'getAreas'); //get list of are group
+    $app->get('/location', 'getLocations'); //get list of devices
+    $app->get('/zone', 'getZones'); //get list of zone
+    $app->get('/event', 'getEvents'); //get list of events
+    $app->get('/schedule', 'getSchedules'); //get list of schedule
     
-    $app->post('/area', 'insertArea');
-    $app->post('/zone', 'insertCommand');
+    $app->post('/area', 'insertArea'); //insert group
+    $app->post('/zone', 'insertCommand'); //insert command for controlling device
+    $app->post('/schedule', 'insertSchedule'); //insert schedule
     
     $app->put('/area', 'updateArea');
     $app->put('/location', 'updateLocation');
     $app->put('/zone', 'updateZone');
     
     $app->delete('/area/:area',   'deleteArea');
+    $app->post('/schedule/delete',   'deleteSchedule');
 
     $app->run();
     
@@ -87,13 +90,26 @@
     }
     
     function getEvents(){
-        $sql = "select * FROM event ORDER BY timestamp";
+        $sql = "select * FROM event WHERE DATE(timestamp) = CURDATE() ORDER BY timestamp";
         try {
             $db = dbConnect();
             $stmt = $db->query($sql);
             $events = $stmt->fetchAll(PDO::FETCH_OBJ);
             $db = null;
             echo  json_encode($events);
+        } catch(PDOException $e) {
+            echo '{"error":{"text":'. $e->getMessage() .'}}';
+        }     
+    }
+    
+    function getSchedules(){
+        $sql = "select * FROM schedule";
+        try {
+            $db = dbConnect();
+            $stmt = $db->query($sql);
+            $schedules = $stmt->fetchAll(PDO::FETCH_OBJ);
+            $db = null;
+            echo  json_encode($schedules);
         } catch(PDOException $e) {
             echo '{"error":{"text":'. $e->getMessage() .'}}';
         }     
@@ -143,6 +159,7 @@
             echo '{"error":{"text":'. $e->getMessage() .'}}';
         } 
     }
+
     
     //------------------Post Function-------------------------
     function insertCommand(){
@@ -178,6 +195,30 @@
         } 
     }
     
+    function insertSchedule(){
+        $cmd = Slim::getInstance()->request();
+        $sql = "INSERT INTO schedule (id, dstart, dend, tstart, tend, address, zone, lamp, mode, active) VALUES (default, :dstart, :dend, :tstart, :tend, :address, :zone, :lamp, :mode, default)";
+        try {
+            $db = dbConnect();
+            $stmt = $db->prepare($sql);
+            
+            $stmt->bindParam("dstart", $cmd->post('dstart'));
+            $stmt->bindParam("dend", $cmd->post('dend'));
+            $stmt->bindParam("tstart", $cmd->post('tstart'));
+            $stmt->bindParam("tend", $cmd->post('tend'));
+            $stmt->bindParam("address", $cmd->post('address'));
+            $stmt->bindParam("zone", $cmd->post('zone'));          
+            $stmt->bindParam("lamp", $cmd->post('lamp'));
+            $stmt->bindParam("mode", $cmd->post('mode'));
+            
+            
+            $stmt->execute();
+            $db = null;
+        } catch(PDOException $e) {
+            echo '{"error":{"text":'. $e->getMessage() .'}}';
+        } 
+    }
+    
     function insertArea(){
         $cmd = Slim::getInstance()->request();
         $sql = "INSERT INTO arealist (area) value (:area)";
@@ -198,6 +239,20 @@
             $db = dbConnect();
             $stmt = $db->prepare($sql);
             $stmt->bindParam("area", $area);
+            $stmt->execute();
+            $db = null;
+        } catch(PDOException $e) {
+            echo '{"error":{"text":'. $e->getMessage() .'}}';
+        }
+    }
+    
+    function deleteSchedule(){
+        $cmd = Slim::getInstance()->request();
+        $sql = "DELETE FROM schedule WHERE id=:id";
+        try {
+            $db = dbConnect();
+            $stmt = $db->prepare($sql);
+            $stmt->bindParam("id", $cmd->post('id'));
             $stmt->execute();
             $db = null;
         } catch(PDOException $e) {

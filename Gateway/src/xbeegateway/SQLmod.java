@@ -132,6 +132,7 @@ public class SQLmod {
     }
     
     public boolean checkCommand() throws SQLException{ // update Status table with data format [address, occ, light, lamp]
+        System.out.println("tes");
         boolean val=false;
         try (Statement allfind=con.createStatement()) {
             ResultSet allset = allfind.executeQuery("SELECT zone, address, id FROM "+commandtable+" ");
@@ -155,7 +156,7 @@ public class SQLmod {
         String address=null;
         
         try (Statement cmdquery=con.createStatement(); Statement delrecord=con.createStatement()) {
-            ResultSet query = cmdquery.executeQuery("SELECT id , zone, address, mode, setpoint, errorband, lamp FROM "+commandtable+" WHERE address = '"+address+"'");
+            ResultSet query = cmdquery.executeQuery("SELECT id , zone, address, mode, setpoint, errorband, lamp FROM "+commandtable+"");
             if(query.next()){
                 address=query.getString("address");
                 packet.add(EndGateway);
