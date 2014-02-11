@@ -38,9 +38,10 @@ public class XbeeGateway {
         //tesSchedule();
         //relayStressTest();
         //tesEvent();
-        //tesDelay();
-        tesGateway();
+        tesDelay();
+        //tesGateway();
         //tesCRC();
+        //tesCRCReceive();
     }
      
     public static void tesEvent() throws Exception {
@@ -108,7 +109,7 @@ public class XbeeGateway {
     }
     
     public static void relayStressTest() throws Exception {
-        XbeeSR xbeedata=new XbeeSR ("COM11", 9600); //create connection to xbee com port
+        XbeeSR xbeedata=new XbeeSR ("COM11", 38400); //create connection to xbee com port
         Bitplay bitplay=new Bitplay();
         
         int counter=0; int fail=0; int treshold=0; int lux=0;
@@ -155,13 +156,18 @@ public class XbeeGateway {
     }
 
     public static void tesDelay() throws Exception {
-        XbeeSR xbeedata=new XbeeSR ("COM11", 9600); 
+        XbeeSR xbeedata=new XbeeSR ("COM11", 115200); 
         xbeedata.delayTest(5000);
+    }
+    
+    public static void tesCRCReceive() throws Exception {
+        XbeeSR xbeedata=new XbeeSR ("COM11", 57600); 
+        xbeedata.CRCReceive(5000);
     }
     
     public static void tesCRC() throws Exception{
         CRC crc = new CRC();
-        XbeeSR xbeedata=new XbeeSR ("COM11", 9600); //create connection to xbee com port
+        XbeeSR xbeedata=new XbeeSR ("COM11", 38400); //create connection to xbee com port
         int i=0;
         int[] payload;
         int success=0;

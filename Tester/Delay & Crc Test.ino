@@ -32,13 +32,13 @@ void setup() {
     StatPayload[34]=getMSB(crc,16);
     StatPayload[35]=getLSB(crc,16);
 
-	Serial.begin(9600);
+	Serial.begin(115200);
 	xbee.setSerial(Serial);
 }
 
 // continuously reads packets, looking for ZB Receive or Modem Status
 void loop() {
-    xbee.readPacket(500);
+    xbee.readPacket();
     
     if (xbee.getResponse().isAvailable()) {
       if (xbee.getResponse().getApiId() == ZB_RX_RESPONSE) {

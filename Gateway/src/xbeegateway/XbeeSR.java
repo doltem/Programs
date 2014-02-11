@@ -94,7 +94,6 @@ public class XbeeSR {
     public void parseResponse() throws XBeeException, ClassCastException{ //method for parsing incoming Xbee data
         try{
             response = xbee.getResponse();
-            System.out.println("response");
             if (response.getApiId() == ApiId.ZNET_RX_RESPONSE){
                 rx = (ZNetRxResponse) response;
                 remoteAddr=ByteUtils.toBase16(rx.getRemoteAddress64().getAddress());
@@ -224,7 +223,7 @@ public class XbeeSR {
      }
     
     
-    public void delayTest( int timeoutdelay) throws XBeeException, IOException, InterruptedException{
+   public void delayTest( int timeoutdelay) throws XBeeException, IOException, InterruptedException{
 	XBeeAddress64 addr64=new XBeeAddress64("00 13 a2 00 40 8b 5e 9f");
         int[] payload={0x80,0x01,0x10,0x00,0x48,0x00,0x02,0x00,0x04,0x18,0x00,0x00,0x01,0x18,0x01,0x00,0x03,0x21,0x00,0x00,0x00,0x03,0x21,0x1b,0x4c};
 	long delay=0;
@@ -298,4 +297,73 @@ public class XbeeSR {
         System.out.println("completed");
      }
 
+    public void CRCReceive( int timeoutdelay) throws XBeeException, IOException, InterruptedException{
+	XBeeAddress64 addr64=new XBeeAddress64("00 13 a2 00 40 8b 5e 9f");
+        int[] payload={0x80,0x01,0x10,0x00,0x48,0x00,0x02,0x00,0x04,0x18,0x00,0x00,0x01,0x18,0x01,0x00,0x03,0x21,0x00,0x00,0x00,0x03,0x21,0x1b,0x4c};
+	int[] receive;
+        long delay=0;
+        long start = 0;
+        long end =0;
+        boolean notdelivered=true;
+        int success=0;
+        int fail=0;
+        short counter=0;
+        CRC crc = new CRC();
+        
+        ZNetTxRequest request=new ZNetTxRequest(addr64, payload);
+        int index=0;
+        boolean noretries=true;
+        while(index<=200){
+            if(notdelivered){
+                try {
+                    tx = (ZNetTxStatusResponse) xbee.sendSynchronous(request, timeoutdelay);
+                    if(noretries){
+                        start=System.currentTimeMillis();
+                    }
+                    //System.out.println("Start : "+start);
+                    // update frame id for next request
+                    request.setFrameId(xbee.getNextFrameId());
+                    if (tx.getDeliveryStatus() == ZNetTxStatusResponse.DeliveryStatus.SUCCESS) {
+                       System.out.println("Packet delivery success");
+                       //break;
+                        notdelivered=false;
+                        noretries=true;
+                    } else {
+                       //System.out.println("Packet delivery failed");
+                       noretries=false;
+                    }
+                }
+                catch (XBeeTimeoutException e) {
+                        System.out.println(e);
+                        int i=5;
+                        System.out.println("device : "+i);
+                }
+            }
+            //}
+            this.parseResponse();
+            if (this.isDataAvail() && noretries){
+                receive=this.getFullData();
+                for(int c=0;c<payload.length;++c){
+                    System.out.print(Integer.toHexString(receive[c])+" ");
+                }
+                
+                int crcvalue=crc.getCRC(receive, receive.length);
+                if(crcvalue==0){
+                    ++success;
+                }
+                else{
+                    ++fail;
+                }
+                ++index;
+                notdelivered=true;
+                System.out.println("Good Data :"+success);
+                System.out.println("Bad Data :"+fail);
+
+                //break because data received
+            }
+        }
+        System.out.println("completed");
+     }
+
+    
 }

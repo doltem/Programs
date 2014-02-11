@@ -1,0 +1,204 @@
+
+/* this is coding for testing sending with simulated light sensor data. need to be added :
+    1.Pin for led status
+    2.remote adress for sending stat
+    3.Send LED status
+    4.Parse Input from gateway
+
+    sending frame checked : OK
+*/
+#include <MsTimer2.h>
+#include <XBee.h>
+#include <math.h>
+
+//////////CRC VARIABLE//////
+uint16_t crcTable[256];
+uint16_t poly=0x8005; //polynom based on CRC-16 Standard
+
+//Endpoint Identifier
+#define EndOnoffL 0x12
+#define EndGateway 0x80
+
+//Cluster Identifier (M ->MSB , L ->LSB)
+#define MCustomCluster 0x10
+#define LCustomCluster 0x00
+
+//Cluster ID joined
+#define CustomCluster 0x1000
+
+//FrameControl
+#define FCServer2Client 0x58
+#define FCClient2Server 0x48
+
+//Command Identifier
+#define CReportAttribute 0x0a
+
+//Attribute id for Special Custom CLuster 
+#define LOnOffId 0x00
+#define LOccId 0x01
+#define LLightId 0x02
+#define LLightSetId 0x03
+#define LLightBandId 0x04
+#define LMode 0x05
+
+//Data Type Identifier
+#define DT8Bitmap 0x18
+#define DT8Enum 0x30
+#define DT16Uint 0x21
+
+//initial value for packet
+#define OccValue 0 //PIR Sensor
+#define LightValueMSB 0 //MSB of light level value
+#define LightValueLSB 0 //LSB of light level value
+#define LightSetMSB 0 //MSB of light level set point value
+#define LightSetLSB 0 //LSB of light level set point value
+#define LightBandMSB 0 //MSB of light level error band value
+#define LightBandLSB 0 //LSB of light level error band value
+#define Lamp 0 //operatioan mode status -> AUTO
+#define mode 0x01 //operatioan mode status -> AUTO
+#define endpoint 1 //endpoint = zone
+
+//Occupancy Value
+#define OCCUPIED 0x01
+#define UNOCCUPIED 0x00
+
+//Light measurement data type
+#define LUXSET 0x00
+#define LUXLEVEL 0x01
+#define LUXBAND 0x02
+
+//LED mapping
+#define setLed 7
+#define statusLed 4
+#define modeLed 7
+#define setButton 3
+#define manSwitch 2
+
+//Operational Mode
+#define AUTO 0x01
+#define MANUAL 0x00
+//Lamp Status
+#define ON 0x01
+#define OFF 0x00
+
+int Trans = 0;
+//dump for sensor value array
+int dump=-1;
+double ddump=-1;
+
+//int mock=1; //data for testing zone occupancy
+//double dmock=100; //data for testing zone lighting level
+
+///sensor value table
+int pirval[5] = { 0, -1, -1, -1,-1};
+double lightval[5] = { 0, -1, -1, -1,-1}; //final value of lighting levele
+double lightves[5]= { 0, 0, 0, 0, 0}; //vessel for determine lighting level value mean after a cycle
+int lightcount=0; //counter for each lighting level sensor reading
+
+///zone mapping table , always insert -1 if element not used. in some table rightmost column or lowest row, used -1 as table limit
+int *zonepir [5][4] = { //pir mapping to zones
+    {  &pirval[0], &dump , &dump, &dump},
+    { &dump, &dump, &dump, &dump},
+    { &dump, &dump, &dump, &dump},
+    { &dump, &dump, &dump, &dump},
+    { &dump, &dump, &dump, &dump} //row 5  is table limit, always set -1
+};
+
+double *zonelux [5][4] = { //ligh sensor mapping to zones
+    {  &lightval[0],  &ddump, &ddump, &ddump},
+    { &ddump, &ddump, &ddump, &ddump},
+    { &ddump, &ddump, &ddump, &ddump},
+    { &ddump, &ddump, &ddump, &ddump},
+    { &ddump, &ddump, &ddump, &ddump} //row 5  is table limit, always set -1
+};
+
+int zoneocclamp [4][4] ={  //lamp and occupancy status of each zones
+    {0, -1, -1, -1}, //lamp
+    {0, -1, -1, -1}, //occupancy
+    {AUTO, -1, -1, -1}, //mode
+    {0, 0, 0, 0}//button state
+};
+
+double zonelight [3][4] ={ //light level and setpoint status of each zones
+    {0, -1, -1, -1}, //lux
+    {0, -1, -1, -1}, //setpoint
+    {5, -1, -1, -1}, //error band
+};
+
+///pin mapping, always insert -1 if element not used
+byte modeButton=4;
+int button[5]={4,-1,-1,-1,-1};
+int zonerelay[5]= {10,-1,-1,-1,-1}; //pin mapping for relay
+int pinpir[5] = {2,-1,-1,-1,-1}; //pin mapping for pir
+int pinlight[5] = {A0,-1,-1,-1,-1}; //pin mapping for light level sensor
+
+//operational VARIABLE
+byte aktif=0;
+
+//Xbee Object
+XBee xbee = XBee();
+// create reusable response objects for responses we expect to handle 
+XBeeResponse response = XBeeResponse();
+ZBRxResponse rx = ZBRxResponse();
+ModemStatusResponse msr = ModemStatusResponse();
+ZBTxStatusResponse txStatus = ZBTxStatusResponse();
+
+///create payload for status delivery
+//Gateway Adress
+XBeeAddress64 GatewayAddr = XBeeAddress64(0x0013A200, 0x4092D859);
+//packet payload
+uint8_t StatPayload[] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x20,0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x28,0x29,0x30,0x31,0x32,0x33,0x34};
+uint8_t CommandPayload[]={0x80,0x01,0x10,0x00,0x48,0x00,0x02,0x00,0x04,0x18,0x00,0x00,0x01,0x18,0x01,0x00,0x03,0x21,0x00,0x00,0x00,0x03,0x21,0x1b,0x4c};
+//Transmit Packets
+ZBTxRequest StatPacket = ZBTxRequest(GatewayAddr, StatPayload, sizeof(StatPayload));
+ZBTxRequest CommandPacket = ZBTxRequest(GatewayAddr, CommandPayload, sizeof(CommandPayload));
+void setup() {
+   
+  Serial.begin(9600);
+  xbee.setSerial(Serial);
+  
+}
+
+int start;
+int end;
+
+void loop() {
+    checkPacket();      //check incoming packet
+}
+
+//functions for sending and receiving packet
+void checkPacket(){
+    xbee.readPacket();
+    if (xbee.getResponse().isAvailable()) {
+        
+        
+        if (xbee.getResponse().getApiId() == ZB_RX_RESPONSE) {//get RX response
+             //error band
+             xbee.getResponse().getZBRxResponse(rx); 
+            int header = rx.getData(0);
+            if(header==0x01){
+                xbee.send(StatPacket);
+            }
+            else if(header==0x80){
+                xbee.send(CommandPacket);
+            }
+        } 
+        else if (xbee.getResponse().getApiId() == ZB_TX_STATUS_RESPONSE) {
+            xbee.getResponse().getZBTxStatusResponse(txStatus);
+
+            // get the delivery status, the fifth byte
+            if (txStatus.getDeliveryStatus() == SUCCESS) {
+                // success.  time to celebrate
+                
+            } else {
+                // the remote XBee did not receive our packet. is it powered on?
+                //flashLed(statusLed, 3,500);
+            }
+        }
+        else {
+            // not something we were expecting
+             
+        }
+    }
+}
+
