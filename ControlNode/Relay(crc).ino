@@ -181,13 +181,13 @@ void setup() {
   //attachInterrupt(1, setPoint, RISING); 	//set light level treshold
   
   // start serial for print data
-  Serial.begin(9600);
+  Serial.begin(115200);
   xbee.setSerial(Serial);
   
   //Reserved for Startup Action
   flashLed(8, 3, 500);
   
-  MsTimer2::set(3000, activate); //Interrupt for Sending Device Stat every 1s
+  MsTimer2::set(1000, activate); //Interrupt for Sending Device Stat every 1s
   MsTimer2::start();
   
   digitalWrite(5,HIGH);

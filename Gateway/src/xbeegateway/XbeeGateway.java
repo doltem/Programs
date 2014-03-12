@@ -10,6 +10,7 @@ import java.io.FileWriter;
 import java.io.PrintStream;
 import java.util.Date;
 import java.text.DateFormat;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 //import java.util.Date;
 
@@ -38,8 +39,8 @@ public class XbeeGateway {
         //tesSchedule();
         //relayStressTest();
         //tesEvent();
-        tesDelay();
-        //tesGateway();
+        //tesDelay();
+        tesGateway();
         //tesCRC();
         //tesCRCReceive();
     }
@@ -60,19 +61,23 @@ public class XbeeGateway {
     
     public static void tesGateway() throws Exception {
         String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
-        XbeeSR xbeedata=new XbeeSR ("COM11", 9600); //create connection to xbee com port
+        XbeeSR xbeedata=new XbeeSR ("COM11", 115200); //create connection to xbee com port
         //xbeedata.setDB(dburl,dbuser,dbpass); //connect xbee object to database
         SQLmod dbase=new SQLmod(dburl,dbuser,dbpass); //create connection to MySQL 
         
         String addr="a"; int occ=0; double lux=0; double setpoint=0; double eband=0; int lamp=0; int mode=0; int zone=0;
         int i=0;
         int[] payload;
+        long start = 0;
+        long end =0;
+        
+        DecimalFormat df = new DecimalFormat("#.####");
 
         while(true){
-            System.out.println("loop");
+            start=System.currentTimeMillis(); 
             xbeedata.parseResponse();
             if(xbeedata.isDataAvail()){
-                System.out.println("Data masuk");
+               //System.out.println("Data masuk");
                 zone=xbeedata.getData(ZONE);
                 addr=xbeedata.getRemoteAddr();
                 lamp=xbeedata.getData(LAMP);
@@ -81,29 +86,32 @@ public class XbeeGateway {
                 setpoint=xbeedata.getLight(SPOINT);
                 eband=xbeedata.getLight(EBAND);
                 mode=xbeedata.getData(MODE);
-                System.out.print("Payload : ");
+                //System.out.print("Payload : ");
                 payload=xbeedata.getFullData();
                 for(int c=0;c<payload.length;++c){
-                    System.out.print(Integer.toHexString(payload[c])+" ");
+                    //System.out.print(Integer.toHexString(payload[c])+" ");
                 }
-                System.out.println("Alamat Pengirim : "+addr);
-                System.out.println("Zona Operasi : "+zone);
-                System.out.println("1.Status Lampu : "+lamp);
-                System.out.println("2.Status Okupansi : "+occ);
-                System.out.println("3.Tingkat Pencahayaan : "+lux+" lux");
-                System.out.println("4.Setpoint Pencahayaan : "+setpoint+" lux");
-                System.out.println("5.Error Band Pencahayaan : "+eband+" lux");
-                System.out.println("5.Mode Operasi : "+mode);
-                dbase.updateStatus(addr, zone, occ, lux, setpoint, eband, lamp,mode);
-            System.out.println("Iterasi ke-"+i+",");
-            System.out.println("");
+                //System.out.println("Alamat Pengirim : "+addr);
+                //System.out.println("Zona Operasi : "+zone);
+                //System.out.println("1.Status Lampu : "+lamp);
+                //System.out.println("2.Status Okupansi : "+occ);
+                System.out.println(/*"3.Tingkat Pencahayaan : "+*/df.format(lux)/*+" lux"*/);
+                //System.out.println("4.Setpoint Pencahayaan : "+df.format(setpoint)+" lux");
+                //System.out.println("5.Error Band Pencahayaan : "+df.format(eband)+" lux");
+                //System.out.println("5.Mode Operasi : "+mode);
+                //dbase.updateStatus(addr, zone, occ, lux, setpoint, eband, lamp,mode);
+                dbase.getSchedule();
+               // dbase.event(addr,zone,occ);
+            //System.out.println("Iterasi ke-"+i+",");
+            //System.out.println("");
             i++;
             }
             while(dbase.checkCommand()){
                 System.out.println("Command Query Found");
                 xbeedata.sendPacket(dbase.getCommand());
             }
-            //dbase.updateStatus(addr, zone, occ, lux, setpoint, lamp,mode);
+            end=System.currentTimeMillis();
+            //System.out.println("ROUTINE TIME : "+(end-start));
 
         }
     }

@@ -38,33 +38,8 @@ void setup() {
 
 // continuously reads packets, looking for ZB Receive or Modem Status
 void loop() {
-    xbee.readPacket();
-    
-    if (xbee.getResponse().isAvailable()) {
-      if (xbee.getResponse().getApiId() == ZB_RX_RESPONSE) {
-        xbee.getResponse().getZBRxResponse(rx);
-        xbee.send(StatPacket);  
-      } 
-	  else if (xbee.getResponse().getApiId() == MODEM_STATUS_RESPONSE) {
-        xbee.getResponse().getZBTxStatusResponse(txStatus);
-
-			// get the delivery status, the fifth byte
-			if (txStatus.getDeliveryStatus() == SUCCESS) {
-				// success.  time to celebrate
-			} else {
-				// the remote XBee did not receive our packet. is it powered on?
-				//flashLed(statusLed, 3,500);
-			}
-		}
-		else {
-			// not something we were expecting
-			//flashLed(statusLed, 1, 25);    
-		}
-      } 
-	  else {
-        // not something we were expecting
-        //flashLed(errorLed, 1, 25);    
-      }
+	delay(1000);
+    xbee.send(StatPacket);  
 }
 
 void crcTableInit(){

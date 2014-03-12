@@ -19,12 +19,14 @@ void setup() {
   pinMode(9,INPUT);
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
+  delay(60000);
+
 }
 
 // the loop routine runs over and over again forever:
 void loop() {
   //analog
-  /*Serial.print("nilai A0 : ");
+  Serial.print("nilai A0 : ");
   Serial.println(analogRead(A0));
   Serial.print("nilai A1 : ");
   Serial.println(analogRead(A1));
@@ -41,7 +43,7 @@ void loop() {
   Serial.println(digitalRead(5));
   Serial.print("nilai D4 : ");
   Serial.println(digitalRead(6));
-  *///bUTTON
+  //bUTTON
   Serial.print("Button 1 : ");
   Serial.println(digitalRead(4));
   Serial.print("Button 2 : ");
@@ -51,6 +53,14 @@ void loop() {
   Serial.print("Button 4 : ");
   Serial.println(digitalRead(9));
   
+  /*Serial.print("nilai D1 : ");
+  Serial.println(digitalRead(2));
+  if(digitalRead(2)==HIGH){
+    digitalWrite(6,HIGH);
+  }
+  else{
+    digitalWrite(6,LOW);
+  }*/
   
   delay(2000);
 }

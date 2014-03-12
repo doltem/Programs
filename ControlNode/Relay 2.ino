@@ -82,18 +82,18 @@ int Trans = 0;
 //----------------------------------------------------------------------------//
 
 ///sensor value table
-int pirval[5] = { 0, 0, -1, -1,-1};
-double lightval[5] = { 0, -1, -1, -1,-1}; //final value of lighting levele
-double lightcal[5] = {1.3894, -1,-1,-1};
-double lightoffset[5] = {3.8677, -1, -1 , -1};
+int pirval[5] = { 0, 0, 0, -1,-1};
+double lightval[5] = { 0, 0, -1, -1,-1}; //final value of lighting levele
+double lightcal[5] = {1.3552, 1.3242,-1,-1};
+double lightoffset[5] = {-9.5246, -4.9094, -1 , -1};
 double lightves[5]= { 0, 0, 0, 0, 0}; //vessel for determine lighting level value mean after a cycle
 int lightcount=0; //counter for each lighting level sensor reading
 
 
 int zoneocclamp [4][4] ={  //lamp and occupancy status of each zones
-	{0, -1, -1, -1}, //lamp
+	{0, 0, -1, -1}, //lamp
 	{0, -1, -1, -1}, //occupancy
-	{AUTO, -1, -1, -1}, //mode
+	{AUTO, 0, -1, -1}, //mode
 	{0, 0, 0, 0}//button state
 };
 
@@ -120,14 +120,14 @@ unsigned long pirtime[4];
 //pin mapping, ALWAYS INSERT -1 if element not used
 byte modeButton=4;
 int button[5]={4,-1,-1,-1,-1};
-int zonerelay[5]= {10,-1,-1,-1,-1}; //pin mapping for relay
+int zonerelay[5]= {10,11,-1,-1,-1}; //pin mapping for relay
 int pinpir[5] = {2,3,5,-1,-1}; //pin mapping for pir
 int pinlight[5] = {A0,A1,-1,-1,-1}; //pin mapping for light level sensor
 
 
 //pir mapping to zones , ALWAYS INSERT &dump if element not used. LOWEST ROW CAN'T BE USED
 int *zonepir [5][4] = { 
-	{  &pirval[0], &dump , &dump, &dump},
+	{  &pirval[0], &pirval[2] , &dump, &dump},
 	{  &pirval[1], &dump, &dump, &dump},
 	{ &dump, &dump, &dump, &dump},
 	{ &dump, &dump, &dump, &dump},
@@ -136,7 +136,7 @@ int *zonepir [5][4] = {
 
 //ligh sensor mapping to zones , ALWAYS INSERT &ddump if element not used. LOWEST ROW CAN'T BE USED
 double *zonelux [5][4] = { 
-	{  &lightval[0],  &ddump, &ddump, &ddump},
+	{  &lightval[0],  &lightval[1], &ddump, &ddump},
 	{ &ddump, &ddump, &ddump, &ddump},
 	{ &ddump, &ddump, &ddump, &ddump},
 	{ &ddump, &ddump, &ddump, &ddump},

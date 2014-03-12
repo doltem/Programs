@@ -154,7 +154,7 @@ ZBTxRequest StatPacket = ZBTxRequest(GatewayAddr, StatPayload, sizeof(StatPayloa
 ZBTxRequest CommandPacket = ZBTxRequest(GatewayAddr, CommandPayload, sizeof(CommandPayload));
 void setup() {
    
-  Serial.begin(9600);
+  Serial.begin(38400);
   xbee.setSerial(Serial);
   
 }

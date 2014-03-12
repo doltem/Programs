@@ -51,7 +51,7 @@ public class SQLmod {
         try (Connection con = DriverManager.getConnection(DB_URL, USER, PASS);
         Statement stmt1=con.createStatement();Statement stmt2=con.createStatement()){
           if(occ==0x01){status="OCCUPIED";}else{status="UNOCCUPIED";}
-          ResultSet stat= stmt1.executeQuery("SELECT grup , location FROM "+adrtable+" WHERE address = '"+address+"'");
+          ResultSet stat= stmt1.executeQuery("SELECT area , location FROM "+adrtable+" WHERE address = '"+address+"'");
           ResultSet rs = stmt2.executeQuery("SELECT occ FROM "+statustable+" WHERE address = '"+address+"' AND zone = "+zone+" "); 
           while(stat.next()){ 
             System.out.println("Address Found");
@@ -59,7 +59,7 @@ public class SQLmod {
                 System.out.println("Zone Found");
                 if(!rs.getString("occ").equals(status)){
                   String ins = "INSERT INTO "+eventtable+
-                  " VALUES (default,default,'"+address+"',"+zone+",'"+stat.getString("location")+"','"+stat.getString("grup")+"','"+status+"')";
+                  " VALUES (default,default,'"+address+"',"+zone+",'"+stat.getString("location")+"','"+stat.getString("area")+"','"+status+"')";
                   con.createStatement().executeUpdate(ins);
                   System.out.println("Success in insert to "+eventtable);
                 }
@@ -85,19 +85,18 @@ public class SQLmod {
                     while(rs.next()){
                        try (Statement stmt2 = con.createStatement()){
                            //searching zone already in table or not
-                           ResultSet stat = stmt2.executeQuery("SELECT zone FROM "+statustable+" WHERE address = '"+address+"'");
+                           ResultSet stat = stmt2.executeQuery("SELECT zone FROM "+statustable+" WHERE address = '"+address+"' AND zone = "+zone+"");
                            if(stat.next()==true){ //if "zone found", update value in selected row
-                                    //System.out.println("Zone Found : zone "+zone);
+                                    System.out.println("Zone Found : zone "+zone);
                                     stat.beforeFirst();
-                                    System.out.print("nilai lampu: ");
-                                    System.out.println(lamp);
                                     while(stat.next()){
                                             upd = "UPDATE "+statustable+" SET address = '"+address+"' , mode = '"+mode+"' , occ = "+occ+" , lux = "+lux+" , setpoint = "+setpoint+" , lamp = "+lamp+", errorband="+eband+" WHERE zone = "+zone+" ";
                                             insupd.executeUpdate(upd);
                                             System.out.println("Berhasil memasukkan data ke database dari zona "+zone+" di alamat "+address+", ");
                                     }
                             }
-                            else{ // if "zone not found" not insert new row
+                            else{ // if "zone not found" insert new row
+                                    System.out.println("zone not found");
                                     alias = "Zona"+zone;
                                     upd = "INSERT INTO "+statustable+
                                     " VALUES (default,"+zone+",'"+alias+"','"+address+"',"+mode+","+occ+","+lux+","+setpoint+","+eband+","+lamp+")";
@@ -111,6 +110,7 @@ public class SQLmod {
                     }
                 }
                 else{ // if "address not found" insert new row
+                    System.out.println("address not found");
                     upd = "INSERT INTO "+adrtable+
                             " VALUES ('"+address+"','"+address+"',default)";
                     insupd.executeUpdate(upd);
@@ -132,7 +132,6 @@ public class SQLmod {
     }
     
     public boolean checkCommand() throws SQLException{ // update Status table with data format [address, occ, light, lamp]
-        System.out.println("tes");
         boolean val=false;
         try (Statement allfind=con.createStatement()) {
             ResultSet allset = allfind.executeQuery("SELECT zone, address, id FROM "+commandtable+" ");

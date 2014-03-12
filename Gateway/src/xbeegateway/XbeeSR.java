@@ -92,9 +92,13 @@ public class XbeeSR {
     }
     
     public void parseResponse() throws XBeeException, ClassCastException{ //method for parsing incoming Xbee data
+        long start=0;
+        long end=0;
         try{
-            response = xbee.getResponse();
+            
+            response = xbee.getResponse(50);   
             if (response.getApiId() == ApiId.ZNET_RX_RESPONSE){
+                
                 rx = (ZNetRxResponse) response;
                 remoteAddr=ByteUtils.toBase16(rx.getRemoteAddress64().getAddress());
                 intAddr=rx.getRemoteAddress64().getAddress();
@@ -106,10 +110,11 @@ public class XbeeSR {
                 System.out.println();*/
                 
                 avail=true;
+   
             }
         }
         catch (XBeeException | ClassCastException e){
-            System.out.println(e);
+            //System.out.println(e);
         }
         finally{
             if(xbee.isConnected()){
@@ -124,18 +129,36 @@ public class XbeeSR {
         switch(type){
             case LIGHT:{
                 val= bitplay.joinBit(data[18],data[19],16);
+                if((val-1)/1000<1){
+                    val=0;
+                }
+                else{
                 val= Math.pow(10,((val-1)/10000));
+            
+                }
             }
             break;
                 
             case SPOINT:{
                 val= bitplay.joinBit(data[23],data[24],16);
+                if((val-1)/1000<=0){
+                    val=0;
+                }
+                else{
                 val= Math.pow(10,((val-1)/10000));
+            
+                }
             }break;
             
             case EBAND:{
                 val= bitplay.joinBit(data[28],data[29],16);
+                if((val-1)/1000<1){
+                    val=0;
+                }
+                else{
                 val= Math.pow(10,((val-1)/10000));
+            
+                }
             }break;
         }
         return val;
