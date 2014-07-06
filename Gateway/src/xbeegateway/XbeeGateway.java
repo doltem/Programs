@@ -27,45 +27,37 @@ public class XbeeGateway {
      * @param args the command line arguments
      */
     
-    private static final short ZONE = 0X01;
-    private static final short MODE = 0X02;
-    private static final short LAMP = 0X03;
-    private static final short OCC = 0X04;
-    private static final short LIGHT = 0X05;
-    private static final short SPOINT = 0X06;
-    private static final short EBAND = 0X07;
+    private static final short AMODE = 0X01;
+    private static final short LMODE = 0X02;
+    private static final short ARELAY = 0X03;
+    private static final short LRELAY = 0X04;
+    private static final short OCC = 0X05;
+    private static final short TEMP = 0X06;
+    private static final short HUM = 0X07;
+    private static final short LUX = 0X08;
+    private static final short ASET = 0X09;
+    private static final short AERROR = 0X10;
+    private static final short LSET = 0X11;
+    private static final short LERROR = 0X12;
     
     public static void main(String[] args) throws Exception {
         //tesSchedule();
-        //relayStressTest();
-        //tesEvent();
-        //tesDelay();
         tesGateway();
-        //tesCRC();
-        //tesCRCReceive();
-    }
-     
-    public static void tesEvent() throws Exception {
-        while(true){
-        String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
-        SQLmod dbase=new SQLmod(dburl,dbuser,dbpass);
-        dbase.event("00 13 a2 00 40 8b 5e 9f",1,0);
-        }
-    }
-    
-    public static void tesSchedule() throws Exception {
-        String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
-        SQLmod dbase=new SQLmod(dburl,dbuser,dbpass);
-        dbase.getSchedule();
     }
     
     public static void tesGateway() throws Exception {
-        String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="";
+        String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="root";
         XbeeSR xbeedata=new XbeeSR ("COM11", 115200); //create connection to xbee com port
         //xbeedata.setDB(dburl,dbuser,dbpass); //connect xbee object to database
         SQLmod dbase=new SQLmod(dburl,dbuser,dbpass); //create connection to MySQL 
         
-        String addr="a"; int occ=0; double lux=0; double setpoint=0; double eband=0; int lamp=0; int mode=0; int zone=0;
+        String addr="a";
+        int amode=0; int lmode=0;
+        int arelay=0; int lrelay=0;
+        int occ=0;
+        double temp=0; double hum=0; double lux=0;
+        double aset=0; double aerror=0;
+        double lset=0; double lerror=0;
         int i=0;
         int[] payload;
         long start = 0;
@@ -77,15 +69,24 @@ public class XbeeGateway {
             start=System.currentTimeMillis(); 
             xbeedata.parseResponse();
             if(xbeedata.isDataAvail()){
-               //System.out.println("Data masuk");
-                zone=xbeedata.getData(ZONE);
+                System.out.println("Data masuk");
                 addr=xbeedata.getRemoteAddr();
-                lamp=xbeedata.getData(LAMP);
+                amode=xbeedata.getData(AMODE);
+                lmode=xbeedata.getData(LMODE);
+                
+                arelay=xbeedata.getData(ARELAY);
+                lrelay=xbeedata.getData(LRELAY);
+                
                 occ=xbeedata.getData(OCC);
-                lux=xbeedata.getLight(LIGHT);
-                setpoint=xbeedata.getLight(SPOINT);
-                eband=xbeedata.getLight(EBAND);
-                mode=xbeedata.getData(MODE);
+                temp=xbeedata.getData(TEMP);
+                hum=xbeedata.getData(HUM);
+                lux=xbeedata.getData(LUX);
+                
+                aset=xbeedata.getData(ASET);
+                aerror=xbeedata.getData(AERROR);
+                lset=xbeedata.getData(LSET);
+                lerror=xbeedata.getData(LERROR);
+                
                 //System.out.print("Payload : ");
                 payload=xbeedata.getFullData();
                 for(int c=0;c<payload.length;++c){
@@ -95,14 +96,11 @@ public class XbeeGateway {
                 //System.out.println("Zona Operasi : "+zone);
                 //System.out.println("1.Status Lampu : "+lamp);
                 //System.out.println("2.Status Okupansi : "+occ);
-                System.out.println(/*"3.Tingkat Pencahayaan : "+*/df.format(lux)/*+" lux"*/);
+                //System.out.println(/*"3.Tingkat Pencahayaan : "+*/df.format(lux)/*+" lux"*/);
                 //System.out.println("4.Setpoint Pencahayaan : "+df.format(setpoint)+" lux");
                 //System.out.println("5.Error Band Pencahayaan : "+df.format(eband)+" lux");
                 //System.out.println("5.Mode Operasi : "+mode);
-                //dbase.updateStatus(addr, zone, occ, lux, setpoint, eband, lamp,mode);
-                dbase.getSchedule();
-               // dbase.event(addr,zone,occ);
-            //System.out.println("Iterasi ke-"+i+",");
+                dbase.updateStatus(addr, amode, lmode, arelay, lrelay, occ, temp, hum, lux, aset, aerror, lset, lerror);
             //System.out.println("");
             i++;
             }

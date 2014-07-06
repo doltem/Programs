@@ -25,7 +25,7 @@ short pin[5] = {10,11,2,3,A0}; //{relay ac, relay lampu, pir, temperature, light
 //-----------Nilai Variable--------//
 short digi[3] = {1,1,0}; //{relay ac,relay lamp, pir}
 float analog[3] = {0,0,0}; //temperature, humidity, light
-float setpoint[4] = {0,0,0,0}; //{temp,tempdeadband,light,lightdeadband}
+float setpoint[4] = {26,1,30,10}; //{temp,tempdeadband,light,lightdeadband}
 
 short mode[2]={1,1};//mode auto atau manual {ac,lampu}
 //---------dht variable------------//

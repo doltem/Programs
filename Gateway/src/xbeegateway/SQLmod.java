@@ -32,12 +32,9 @@ public class SQLmod {
     String DB_URL;
     String USER;
     String PASS;
-    String tableStat="device_stat_";
-    String adrtable="devicelist";
-    String statustable="devicestat";
-    String eventtable="event";
+    String adrtable="status";
+    String statustable="status";
     String commandtable="command";
-    String schedtable="schedule";
     
     public SQLmod(String DB_URL, String USER, String PASS) throws SQLException{ //class constructor for setting url, user, password
         this.DB_URL=DB_URL;
@@ -46,32 +43,7 @@ public class SQLmod {
         con = DriverManager.getConnection(DB_URL, USER, PASS);
     }
     
-    public void event(String address, int zone, int occ) throws SQLException{
-        String status;
-        try (Connection con = DriverManager.getConnection(DB_URL, USER, PASS);
-        Statement stmt1=con.createStatement();Statement stmt2=con.createStatement()){
-          if(occ==0x01){status="OCCUPIED";}else{status="UNOCCUPIED";}
-          ResultSet stat= stmt1.executeQuery("SELECT area , location FROM "+adrtable+" WHERE address = '"+address+"'");
-          ResultSet rs = stmt2.executeQuery("SELECT occ FROM "+statustable+" WHERE address = '"+address+"' AND zone = "+zone+" "); 
-          while(stat.next()){ 
-            System.out.println("Address Found");
-            while(rs.next()){
-                System.out.println("Zone Found");
-                if(!rs.getString("occ").equals(status)){
-                  String ins = "INSERT INTO "+eventtable+
-                  " VALUES (default,default,'"+address+"',"+zone+",'"+stat.getString("location")+"','"+stat.getString("area")+"','"+status+"')";
-                  con.createStatement().executeUpdate(ins);
-                  System.out.println("Success in insert to "+eventtable);
-                }
-            }
-          }
-        }
-        catch(SQLException e){
-            System.out.println(e);
-        }  
-    }
-    
-    public void updateStatus(String address, int zone, int occ, double lux, double setpoint, double eband, int lamp, int mode ) throws SQLException{ // update Status table with data format [address, occ, light, lamp]
+    public void updateStatus(String address, int amode, int lmode, int arelay, int lrelay, int occ, double temp, double hum, double lux, double aset, double aerror, double lset, double lerror) throws SQLException{ // update Status table with data format [address, occ, light, lamp]
         //Connection con = DriverManager.getConnection(DB_URL, USER, PASS);
         String upd=null;
         String alias=null;
@@ -83,41 +55,15 @@ public class SQLmod {
                     //System.out.println("Adress Found : "+address);
                     rs.beforeFirst();
                     while(rs.next()){
-                       try (Statement stmt2 = con.createStatement()){
-                           //searching zone already in table or not
-                           ResultSet stat = stmt2.executeQuery("SELECT zone FROM "+statustable+" WHERE address = '"+address+"' AND zone = "+zone+"");
-                           if(stat.next()==true){ //if "zone found", update value in selected row
-                                    System.out.println("Zone Found : zone "+zone);
-                                    stat.beforeFirst();
-                                    while(stat.next()){
-                                            upd = "UPDATE "+statustable+" SET address = '"+address+"' , mode = '"+mode+"' , occ = "+occ+" , lux = "+lux+" , setpoint = "+setpoint+" , lamp = "+lamp+", errorband="+eband+" WHERE zone = "+zone+" ";
-                                            insupd.executeUpdate(upd);
-                                            System.out.println("Berhasil memasukkan data ke database dari zona "+zone+" di alamat "+address+", ");
-                                    }
-                            }
-                            else{ // if "zone not found" insert new row
-                                    System.out.println("zone not found");
-                                    alias = "Zona"+zone;
-                                    upd = "INSERT INTO "+statustable+
-                                    " VALUES (default,"+zone+",'"+alias+"','"+address+"',"+mode+","+occ+","+lux+","+setpoint+","+eband+","+lamp+")";
-                                    insupd.executeUpdate(upd);
-                                    System.out.println("Success in insert to"+statustable+" in "+address+", ");
-                            }
-                       }
-                       catch(SQLException e){
-                           System.out.println(e);
-                       }
+                        upd = "UPDATE "+statustable+" SET zone = 'Ruang Utama' , amode = "+amode+" , lmode = "+lmode+" , arelay = "+arelay+" , lrelay = "+lrelay+" , occ = "+occ+" , temp = "+temp+" , hum = "+hum+" , lux = "+lux+" , aset = "+aset+" , aerror = "+aerror+" , lset = "+lset+" , lerror = "+lerror+" WHERE address = "+address+" ";
+                        insupd.executeUpdate(upd);
+                        System.out.println("Berhasil memasukkan data ke database di alamat "+address+", ");   
                     }
                 }
                 else{ // if "address not found" insert new row
                     System.out.println("address not found");
-                    upd = "INSERT INTO "+adrtable+
-                            " VALUES ('"+address+"','"+address+"',default)";
-                    insupd.executeUpdate(upd);
-                    System.out.println("Success in insert to"+adrtable);
-
                     upd = "INSERT INTO "+statustable+
-                                " VALUES (default,"+zone+",'"+address+"',"+mode+","+occ+","+lux+","+setpoint+","+eband+","+lamp+")";
+                                " VALUES ('"+address+"','Ruang Utama',"+amode+","+lmode+","+arelay+","+lrelay+","+occ+","+temp+","+hum+","+lux+","+aset+","+aerror+","+lset+","+lerror+")";
                     insupd.executeUpdate(upd);
                     System.out.println("Success in insert to"+statustable+" in "+address+", ");
                 }
@@ -131,10 +77,10 @@ public class SQLmod {
         }
     }
     
-    public boolean checkCommand() throws SQLException{ // update Status table with data format [address, occ, light, lamp]
+   public boolean checkCommand() throws SQLException{ // update Status table with data format [address, occ, light, lamp]
         boolean val=false;
         try (Statement allfind=con.createStatement()) {
-            ResultSet allset = allfind.executeQuery("SELECT zone, address, id FROM "+commandtable+" ");
+            ResultSet allset = allfind.executeQuery("SELECT address FROM "+commandtable+" ");
             if(allset.next()){
                 val=true;
             }
@@ -155,16 +101,21 @@ public class SQLmod {
         String address=null;
         
         try (Statement cmdquery=con.createStatement(); Statement delrecord=con.createStatement()) {
-            ResultSet query = cmdquery.executeQuery("SELECT id , zone, address, mode, setpoint, errorband, lamp FROM "+commandtable+"");
+            ResultSet query = cmdquery.executeQuery("SELECT id, address, amode, lmode, arelay, lrelay, aset, aerror, lset, lerror FROM "+commandtable+"");
             if(query.next()){
                 address=query.getString("address");
                 packet.add(EndGateway);
-                packet.add(query.getInt("zone")); //zone
-                packet.add(MCustomCluster); packet.add(LCustomCluster); packet.add(FCClient2Server); packet.add(Trans); packet.add(CWriteAttribute);
-                packet.add(0x00); packet.add(LMode); packet.add(DT8Bitmap); packet.add(query.getInt("mode")); //mode value
-                packet.add(0x00); packet.add(LLamp); packet.add(DT8Bitmap); packet.add(query.getInt("lamp")); //lamp value
-                packet.add(0x00); packet.add(LSetPoint); packet.add(DT16Uint); packet.add(olah.getMSB((int)(10000*Math.log10(query.getFloat("setpoint"))), 16)); packet.add(olah.getLSB((int)(10000*Math.log10(query.getFloat("setpoint"))), 16));//setpoint value
-                packet.add(0x00); packet.add(LSetPoint); packet.add(DT16Uint); packet.add(olah.getMSB((int)(10000*Math.log10(query.getFloat("errorband"))), 16)); packet.add(olah.getLSB((int)(10000*Math.log10(query.getFloat("errorband"))), 16)); //errorband value
+                packet.add(query.getInt("amode"));
+                packet.add(query.getInt("lmode"));
+                packet.add(query.getInt("arelay"));
+                packet.add(query.getInt("lrelay"));
+                
+                packet.add(olah.getMSB((int)(100*query.getFloat("aset")), 16)); packet.add(olah.getLSB((int)(100*query.getFloat("aset")), 16));
+                packet.add(olah.getMSB((int)(100*query.getFloat("aerror")), 16)); packet.add(olah.getLSB((int)(100*query.getFloat("aerror")), 16));
+                packet.add(olah.getMSB((int)(100*query.getFloat("lset")), 16)); packet.add(olah.getLSB((int)(100*query.getFloat("lset")), 16));
+                packet.add(olah.getMSB((int)(100*query.getFloat("lerror")), 16)); packet.add(olah.getLSB((int)(100*query.getFloat("lerror")), 16));
+                
+                
                 delrecord.executeUpdate("DELETE FROM "+commandtable+" WHERE id = '"+query.getInt("id")+"' ");
             }
         }
@@ -179,119 +130,5 @@ public class SQLmod {
         return box;
     }
     
-    public void getSchedule() throws SQLException{ // update Status table with data format [address, occ, light, lamp]
-        String cmd=null;
-        //get current date&time
-        Calendar calendar = Calendar.getInstance();
-        int day = calendar.get(Calendar.DAY_OF_WEEK); //sunday is 1
-        int hour = calendar.get(Calendar.HOUR_OF_DAY);
-        int minute = calendar.get(Calendar.MINUTE);
-        //schedule variable
-        int dstart=0;
-        int dend=0;
-        java.sql.Time tstart=null;
-        java.sql.Time tend=null;
-        //operator type
-        boolean opand;
-        boolean scheck;
-        
-        int index=0;
-        try (Statement qinactive=con.createStatement(); Statement qactive=con.createStatement(); Statement getstatus=con.createStatement();Statement inscmd=con.createStatement()) {
-            //search for inactive schedule
-            ResultSet rsinactive = qinactive.executeQuery("SELECT id,dstart , dend, tstart, tend, address, zone, lamp, mode, active FROM "+schedtable+" WHERE active = 0");
-            while(rsinactive.next()){
-                dstart=rsinactive.getInt("dstart");
-                dend=rsinactive.getInt("dend");
-                tstart=rsinactive.getTime("tstart");
-                tend=rsinactive.getTime("tend");
-                //check the schedule must be activated or not
-                if( checkSchedule(day, hour,minute,dstart,dend,tstart,tend)){
-                    System.out.println("inactive schedule found");
-                    int id=rsinactive.getInt("id");
-                    String address=rsinactive.getString("address");
-                    int zone=rsinactive.getInt("zone");
-                    ResultSet status = getstatus.executeQuery("SELECT setpoint , errorband FROM "+statustable+" WHERE address = '"+address+"' AND zone = "+zone+"");
-                    if(status.next()){
-                        cmd = "INSERT INTO "+commandtable+
-                                    " VALUES (default,"+zone+",'"+address+"',"+rsinactive.getInt("mode")+","+status.getFloat("setpoint")+","+status.getFloat("errorband")+","+rsinactive.getInt("lamp")+")";
-                        inscmd.executeUpdate(cmd);
-                        cmd = "UPDATE "+schedtable+" SET active = 1  WHERE id = "+id+" ";
-                        inscmd.executeUpdate(cmd);
-                        
-                    }                    
-                }            
-            }
-            //search for active schedule
-            ResultSet rsactive = qactive.executeQuery("SELECT id,dstart , dend, tstart, tend, address, zone, lamp, mode, active FROM "+schedtable+" WHERE active = 1");
-            while(rsactive.next()){
-                dstart=rsactive.getInt("dstart");
-                dend=rsactive.getInt("dend");
-                tstart=rsactive.getTime("tstart");
-                tend=rsactive.getTime("tend");
-                //check the schedule must be activated or not
-                if(!checkSchedule(day, hour,minute,dstart,dend,tstart,tend)){
-                    int id=rsactive.getInt("id");
-                    String address=rsactive.getString("address");
-                    int zone=rsactive.getInt("zone");
-                    ResultSet status = getstatus.executeQuery("SELECT setpoint , errorband FROM "+statustable+" WHERE address = '"+address+"' AND zone = "+zone+"");
-                    if(status.next()){
-                        cmd = "INSERT INTO "+commandtable+
-                                    " VALUES (default,"+zone+",'"+address+"',1,"+status.getFloat("setpoint")+","+status.getFloat("errorband")+","+rsactive.getInt("lamp")+")";
-                        inscmd.executeUpdate(cmd);
-                        cmd = "UPDATE "+schedtable+" SET active = 0  WHERE id = "+id+" ";
-                        inscmd.executeUpdate(cmd);
-                        
-                    }                    
-                }
-            }
-        }
-        catch(SQLException e){
-            System.out.println(e.getMessage());
-        }
-    }
-    
-    public boolean checkSchedule(int day, int hour, int minute, int dstart, int dend,java.sql.Time tstart,java.sql.Time tend){
-        boolean scheck;
-        //check schedule day
-        if (dstart <= dend) {  
-            scheck = (day >= dstart && day <= dend);
-        } else {
-            scheck = (day >= dstart || day <= dend);
-        }
-        //check the hour && minute
-        //System.out.println(tstart.getHours());
-        //System.out.println(tend.getHours());
-        if (tstart.getHours() < tend.getHours()) {
-            if (hour == tstart.getHours()) {
-                scheck = scheck && (minute > tstart.getMinutes());
-            } else if (hour == tend.getHours()) {
-                scheck = scheck && (minute < tend.getMinutes());
-            } else {
-                scheck = scheck && (hour > tstart.getHours() && hour < tend.getHours());
-            }
-        } else if (tstart.getHours() > tend.getHours()) {
-            if (hour == tstart.getHours()) {
-                scheck = scheck && (minute > tstart.getMinutes());
-            } else if (hour == tend.getHours()) {
-                scheck = scheck && (minute < tend.getMinutes());
-            } else {
-                System.out.println("tes");
-                scheck = scheck && (hour > tstart.getHours() || hour < tend.getHours());
-            }
-        } else { //if the start hour and end hour same
-            if (hour == tstart.getHours()) {
-                if (tstart.getMinutes() < tend.getMinutes()) {
-                    scheck = scheck && (minute >= tstart.getMinutes() && minute <= tend.getMinutes());
-                } else if (tstart.getMinutes() > tend.getMinutes()) {
-
-                    scheck = scheck && (minute >= tstart.getMinutes() || minute <= tend.getMinutes());
-                }
-            } else {
-                scheck = scheck && false;
-            }
-        }
-  
-        return scheck;
-    }
 }
 

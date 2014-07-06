@@ -1,0 +1,32 @@
+Paket Status
+--------------
+1.mode ac
+2.mode lampu;
+3.relay ac;
+4.relay lampu;
+5.sensor pir;
+6.temp msb;
+7.temp lsb;
+8.hum msb;
+9.hum lsb;
+10.cahaya msb;
+11.cahaya lsb;
+12.sp ac msb;
+13.sp ac lsb;
+14.errorband ac msb;
+15.errorband ac lsb;
+16.sp lampu msb;
+17.sp lampu lsb;
+18.errorband lampu msb;
+19.errorband lampu lsb;
+
+Paket Command
+---------------
+1.mode ac
+2.mode lampu
+3.relay ac
+4.relay lampu
+5.6.setpoint ac msb & lsb
+7.8.erorband ac msb & lsb
+9.10.setpoint lampu msb & lsb
+11.12.erroband lampu msb & lsb

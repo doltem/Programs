@@ -45,13 +45,18 @@ public class XbeeSR {
     private static final short LLamp = 0x01;
     private static final short LSetPoint = 0x03;
     
-    private static final short ZONE = 0X01;
-    private static final short MODE = 0X02;
-    private static final short LAMP = 0X03;
-    private static final short OCC = 0X04;
-    private static final short LIGHT = 0X05;
-    private static final short SPOINT = 0X06;
-    private static final short EBAND = 0X07;
+    private static final short AMODE = 0X01;
+    private static final short LMODE = 0X02;
+    private static final short ARELAY = 0X03;
+    private static final short LRELAY = 0X04;
+    private static final short OCC = 0X05;
+    private static final short TEMP = 0X06;
+    private static final short HUM = 0X07;
+    private static final short LUX = 0X08;
+    private static final short ASET = 0X09;
+    private static final short AERROR = 0X10;
+    private static final short LSET = 0X11;
+    private static final short LERROR = 0X12;
     
     //Xbee Class declaration
     Bitplay bitplay=new Bitplay();
@@ -123,47 +128,6 @@ public class XbeeSR {
         }
     }
     
-    
-    public double getLight(int type){ //method for getting16bit data from parsed packet
-        double val=0;
-        switch(type){
-            case LIGHT:{
-                val= bitplay.joinBit(data[18],data[19],16);
-                if((val-1)/1000<1){
-                    val=0;
-                }
-                else{
-                val= Math.pow(10,((val-1)/10000));
-            
-                }
-            }
-            break;
-                
-            case SPOINT:{
-                val= bitplay.joinBit(data[23],data[24],16);
-                if((val-1)/1000<=0){
-                    val=0;
-                }
-                else{
-                val= Math.pow(10,((val-1)/10000));
-            
-                }
-            }break;
-            
-            case EBAND:{
-                val= bitplay.joinBit(data[28],data[29],16);
-                if((val-1)/1000<1){
-                    val=0;
-                }
-                else{
-                val= Math.pow(10,((val-1)/10000));
-            
-                }
-            }break;
-        }
-        return val;
-    }
-    
     public int[] getFullData(){
         return data;
     }
@@ -175,25 +139,50 @@ public class XbeeSR {
     public int getData(int type){
         int val=0;
         switch(type){
-            case ZONE:{
-                val= data[0];
-            }
-            break;
-            
-            case MODE:{
-                val= data[33];
-            }
-            break;
-            
-            case LAMP:{
-               val= data[10];
-            }
-            break;
+            case AMODE: { val= data[0];} break;
                 
-            case OCC:{
-                val= data[14];
-            }
-            break;
+            case LMODE: { val= data[1];} break;
+                
+            case ARELAY: { val= data[2];} break;
+                
+            case LRELAY: { val= data[3];} break;
+                
+            case OCC: { val= data[4];} break;
+                
+            case TEMP: {
+                val = bitplay.joinBit(data[5], data[6], 16);
+                val = val / 100;
+            }break;
+                
+            case HUM: {
+                val = bitplay.joinBit(data[7], data[8], 16);
+                val = val / 100;
+            }break;
+                
+            case LUX: {
+                val = bitplay.joinBit(data[9], data[10], 16);
+                val = val / 100;
+            }break;
+        
+            case ASET: {
+                val = bitplay.joinBit(data[11], data[12], 16);
+                val = val / 100;
+            }break;
+                
+            case AERROR: {
+                val = bitplay.joinBit(data[13], data[14], 16);
+                val = val / 100;
+            }break;
+                
+            case LSET: {
+                val = bitplay.joinBit(data[15], data[16], 16);
+                val = val / 100;
+            }break;
+                
+            case LERROR: {
+                val = bitplay.joinBit(data[17], data[18], 16);
+                val = val / 100;
+            }break;
         }
         return val;
     }
