@@ -20,14 +20,14 @@ uint8_t StatPayload[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 ZBTxRequest StatPacket = ZBTxRequest(GatewayAddr, StatPayload, sizeof(StatPayload));
 
 //------------Pin Variable---------//
-short pin[5] = {10,11,2,3,A0}; //{relay ac, relay lampu, pir, temperature, light,mode}
+short pin[5] = {11,12,2,3,A0}; //{relay ac, relay lampu, pir, temperature, light,mode}
 
 //-----------Nilai Variable--------//
-short digi[3] = {1,1,0}; //{relay ac,relay lamp, pir}
+short digi[3] = {0,0,0}; //{relay ac,relay lamp, pir}
 float analog[3] = {0,0,0}; //temperature, humidity, light
-float setpoint[4] = {26,1,30,10}; //{temp,tempdeadband,light,lightdeadband}
+float setpoint[4] = {26,0.5,150,10}; //{temp,tempdeadband,light,lightdeadband}
 
-short mode[2]={1,1};//mode auto atau manual {ac,lampu}
+short mode[2]={0,0};//mode auto atau manual {ac,lampu}
 //---------dht variable------------//
 DHT dht(pin[3],DHT22);
 
@@ -90,10 +90,10 @@ void autoSwitch(){
 	if(mode[0]==1){
 		if(digi[2]==1){
 			//ac
-			if(analog[0]<(setpoint[0]-setpoint[1])){
+			if(analog[0]>(setpoint[0]-setpoint[1])){
 				digi[0]=1;
 			}
-			else if(analog[0]>(setpoint[0]+setpoint[1])){
+			else if(analog[0]<(setpoint[0]+setpoint[1])){
 				digi[0]=0;
 			}
 		}
@@ -175,7 +175,7 @@ void sendStatus(){
 	StatPayload[13]=getMSB(10*setpoint[1],16);//errorband ac msb;
 	StatPayload[14]=getLSB(10*setpoint[1],16);//errorband ac lsb;
 	StatPayload[15]=getMSB(10*setpoint[2],16);//sp lampu msb;
-	StatPayload[16]=getMSB(10*setpoint[2],16);//sp lampu lsb;
+	StatPayload[16]=getLSB(10*setpoint[2],16);//sp lampu lsb;
 	StatPayload[17]=getMSB(10*setpoint[3],16);//errorband lampu msb;
 	StatPayload[18]=getLSB(10*setpoint[3],16);//errorband lampu lsb;
 

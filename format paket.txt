@@ -30,3 +30,7 @@ Paket Command
 7.8.erorband ac msb & lsb
 9.10.setpoint lampu msb & lsb
 11.12.erroband lampu msb & lsb
+
+1 1 1 0 1
+1 1a 2 60 a 93
+1 4 0 0 1 1 0 64

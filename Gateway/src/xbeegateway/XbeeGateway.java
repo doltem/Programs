@@ -47,7 +47,7 @@ public class XbeeGateway {
     
     public static void tesGateway() throws Exception {
         String dburl="jdbc:mysql://localhost:3306/otomasi"; String dbuser="root" ; String dbpass="root";
-        XbeeSR xbeedata=new XbeeSR ("COM11", 115200); //create connection to xbee com port
+        XbeeSR xbeedata=new XbeeSR ("COM21", 115200); //create connection to xbee com port
         //xbeedata.setDB(dburl,dbuser,dbpass); //connect xbee object to database
         SQLmod dbase=new SQLmod(dburl,dbuser,dbpass); //create connection to MySQL 
         
@@ -71,35 +71,43 @@ public class XbeeGateway {
             if(xbeedata.isDataAvail()){
                 System.out.println("Data masuk");
                 addr=xbeedata.getRemoteAddr();
-                amode=xbeedata.getData(AMODE);
-                lmode=xbeedata.getData(LMODE);
+                amode=xbeedata.getDataInt(AMODE);
+                lmode=xbeedata.getDataInt(LMODE);
                 
-                arelay=xbeedata.getData(ARELAY);
-                lrelay=xbeedata.getData(LRELAY);
+                arelay=xbeedata.getDataInt(ARELAY);
+                lrelay=xbeedata.getDataInt(LRELAY);
                 
-                occ=xbeedata.getData(OCC);
-                temp=xbeedata.getData(TEMP);
-                hum=xbeedata.getData(HUM);
-                lux=xbeedata.getData(LUX);
+                occ=xbeedata.getDataInt(OCC);
+                temp=xbeedata.getDataFloat(TEMP);
+                hum=xbeedata.getDataFloat(HUM);
+                lux=xbeedata.getDataFloat(LUX);
                 
-                aset=xbeedata.getData(ASET);
-                aerror=xbeedata.getData(AERROR);
-                lset=xbeedata.getData(LSET);
-                lerror=xbeedata.getData(LERROR);
+                aset=xbeedata.getDataFloat(ASET);
+                aerror=xbeedata.getDataFloat(AERROR);
+                lset=xbeedata.getDataFloat(LSET);
+                lerror=xbeedata.getDataFloat(LERROR);
                 
                 //System.out.print("Payload : ");
                 payload=xbeedata.getFullData();
                 for(int c=0;c<payload.length;++c){
-                    //System.out.print(Integer.toHexString(payload[c])+" ");
+                    System.out.print(Integer.toHexString(payload[c])+" ");
                 }
-                //System.out.println("Alamat Pengirim : "+addr);
-                //System.out.println("Zona Operasi : "+zone);
-                //System.out.println("1.Status Lampu : "+lamp);
-                //System.out.println("2.Status Okupansi : "+occ);
-                //System.out.println(/*"3.Tingkat Pencahayaan : "+*/df.format(lux)/*+" lux"*/);
-                //System.out.println("4.Setpoint Pencahayaan : "+df.format(setpoint)+" lux");
-                //System.out.println("5.Error Band Pencahayaan : "+df.format(eband)+" lux");
-                //System.out.println("5.Mode Operasi : "+mode);
+                System.out.println("Alamat Pengirim : "+addr);
+                System.out.println("1.Status Mode AC : "+amode);
+                System.out.println("2.Status Mode Lampu : "+lmode);
+                System.out.println("3.Status Relay AC : "+arelay);
+                System.out.println("4.Status Relay Lampu : "+lrelay);
+                
+                System.out.println("5.Status Okupansi : "+occ);
+                System.out.println("6.Tingkat Temperatur : "+df.format(temp)+"");
+                System.out.println("7.Tingkat Kelembaban : "+df.format(hum)+"");
+                System.out.println("8.Tingkat Pencahayaan : "+df.format(lux)+"");
+                System.out.println("9.Set Point Temperatur : "+df.format(aset)+"");
+                System.out.println("10.Errorband Temperatur : "+df.format(aerror)+"");
+                System.out.println("11.Set point Pencahayaan : "+df.format(lset)+"");
+                System.out.println("12.Errorband Pencahayaan : "+df.format(lerror)+"");
+
+
                 dbase.updateStatus(addr, amode, lmode, arelay, lrelay, occ, temp, hum, lux, aset, aerror, lset, lerror);
             //System.out.println("");
             i++;

@@ -136,7 +136,7 @@ public class XbeeSR {
         return data[index];
     }
     
-    public int getData(int type){
+    public int getDataInt(int type){
         int val=0;
         switch(type){
             case AMODE: { val= data[0];} break;
@@ -149,39 +149,46 @@ public class XbeeSR {
                 
             case OCC: { val= data[4];} break;
                 
+        }
+        return val;
+    }
+    
+    public float getDataFloat(int type){
+        float val=0;
+        switch(type){
             case TEMP: {
                 val = bitplay.joinBit(data[5], data[6], 16);
-                val = val / 100;
+                val = val / 10;
             }break;
                 
             case HUM: {
                 val = bitplay.joinBit(data[7], data[8], 16);
-                val = val / 100;
+                val = val / 10;
             }break;
                 
             case LUX: {
                 val = bitplay.joinBit(data[9], data[10], 16);
-                val = val / 100;
+                val = val / 10;
             }break;
         
             case ASET: {
                 val = bitplay.joinBit(data[11], data[12], 16);
-                val = val / 100;
+                val = val / 10;
             }break;
                 
             case AERROR: {
                 val = bitplay.joinBit(data[13], data[14], 16);
-                val = val / 100;
+                val = val / 10;
             }break;
                 
             case LSET: {
                 val = bitplay.joinBit(data[15], data[16], 16);
-                val = val / 100;
+                val = val / 10;
             }break;
                 
             case LERROR: {
                 val = bitplay.joinBit(data[17], data[18], 16);
-                val = val / 100;
+                val = val / 10;
             }break;
         }
         return val;

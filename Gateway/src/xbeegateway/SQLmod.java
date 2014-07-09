@@ -55,7 +55,7 @@ public class SQLmod {
                     //System.out.println("Adress Found : "+address);
                     rs.beforeFirst();
                     while(rs.next()){
-                        upd = "UPDATE "+statustable+" SET zone = 'Ruang Utama' , amode = "+amode+" , lmode = "+lmode+" , arelay = "+arelay+" , lrelay = "+lrelay+" , occ = "+occ+" , temp = "+temp+" , hum = "+hum+" , lux = "+lux+" , aset = "+aset+" , aerror = "+aerror+" , lset = "+lset+" , lerror = "+lerror+" WHERE address = "+address+" ";
+                        upd = "UPDATE "+statustable+" SET zone = 'Ruang Utama' , amode = "+amode+" , lmode = "+lmode+" , arelay = "+arelay+" , lrelay = "+lrelay+" , occ = "+occ+" , temp = "+temp+" , hum = "+hum+" , lux = "+lux+" , aset = "+aset+" , aerror = "+aerror+" , lset = "+lset+" , lerror = "+lerror+" WHERE address = '"+address+"' ";
                         insupd.executeUpdate(upd);
                         System.out.println("Berhasil memasukkan data ke database di alamat "+address+", ");   
                     }
@@ -110,10 +110,11 @@ public class SQLmod {
                 packet.add(query.getInt("arelay"));
                 packet.add(query.getInt("lrelay"));
                 
-                packet.add(olah.getMSB((int)(100*query.getFloat("aset")), 16)); packet.add(olah.getLSB((int)(100*query.getFloat("aset")), 16));
-                packet.add(olah.getMSB((int)(100*query.getFloat("aerror")), 16)); packet.add(olah.getLSB((int)(100*query.getFloat("aerror")), 16));
-                packet.add(olah.getMSB((int)(100*query.getFloat("lset")), 16)); packet.add(olah.getLSB((int)(100*query.getFloat("lset")), 16));
-                packet.add(olah.getMSB((int)(100*query.getFloat("lerror")), 16)); packet.add(olah.getLSB((int)(100*query.getFloat("lerror")), 16));
+                packet.add(olah.getMSB((int)(10*query.getFloat("aset")), 16)); packet.add(olah.getLSB((int)(10*query.getFloat("aset")), 16));
+                packet.add(olah.getMSB((int)(10*query.getFloat("aerror")), 16)); packet.add(olah.getLSB((int)(10*query.getFloat("aerror")), 16));
+                packet.add(olah.getMSB((int)(10*query.getFloat("lset")), 16)); packet.add(olah.getLSB((int)(10*query.getFloat("lset")), 16));
+                System.out.println("SETPOINT TEMPERATURE"+query.getFloat("lset"));
+                packet.add(olah.getMSB((int)(10*query.getFloat("lerror")), 16)); packet.add(olah.getLSB((int)(10*query.getFloat("lerror")), 16));
                 
                 
                 delrecord.executeUpdate("DELETE FROM "+commandtable+" WHERE id = '"+query.getInt("id")+"' ");
